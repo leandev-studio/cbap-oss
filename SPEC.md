@@ -40,6 +40,9 @@ This repository **must NOT** include enterprise-only or monetized features.
 5. **Composable, Not Opinionated**
    - No domain assumptions (HR, Finance, etc.)
 
+6. **Global-ready (i18n)**
+   - Labels and UI strings support localization via keys and locale dictionaries
+
 ---
 
 ## 3. High-Level Architecture
@@ -56,6 +59,8 @@ This repository **must NOT** include enterprise-only or monetized features.
 | - Workflow Engine            |
 | - Authorization Engine       |
 | - Validation/Rule Engine     |
+| - Task & Scheduler Engine   |
+| - Audit/History Engine      |
 +--------------▲---------------+
                |
 +--------------┴---------------+
@@ -117,8 +122,94 @@ A **Property** is a field belonging to an entity.
 - `calculationExpression` (if calculated)
 - `denormalize` (boolean)
 - `authorizationRules`
+- `labelKey` (i18n key) and `labels` (optional per-locale overrides)
 
 ---
+
+### 4.6 Audit & Record History (Core)
+
+Beyond workflow transition audit trails, the platform MUST maintain a full, queryable history of changes for entity instances.
+
+Required capabilities:
+- Record creation, update, delete events are audited
+- Field-level diff capture (from -> to), including null handling
+- Actor identity (userId), timestamp, and source (UI/API)
+- Workflow transitions link to the same audit stream
+- Audit history is viewable per record and queryable by admins
+
+Minimum audit event schema:
+- `eventId`, `entityId`, `recordId`
+- `eventType` (CREATE/UPDATE/DELETE/TRANSITION)
+- `timestamp`, `actorUserId`
+- `changes[]` (fieldName, oldValue, newValue)
+- `schemaVersion`, `screenVersion`, `workflowState`
+
+Audit requirements:
+- Audit events MUST be immutable
+- Audit storage MUST be append-only
+- Authorization applies when viewing audit events (at least entity read permission)
+
+---
+
+### 4.7 Attachments (Core)
+
+Entity instances MUST support attachments for common business scenarios (invoices, quotations, inspection photos, etc.).
+
+Required capabilities:
+- Attachment upload/download linked to an entity record
+- Metadata: filename, contentType, size, uploadedAt, uploadedBy
+- Authorization inherits from parent record (read/write)
+- Attachments are included in audit stream (upload/remove events)
+
+OSS scope:
+- Storage backend may be local or pluggable
+- Virus scanning and advanced DLP are out of scope
+
+---
+
+### 4.8 Record Lifecycle: Soft Delete, Archive & Retention (Core)
+
+The platform MUST provide record lifecycle controls independent of workflow state.
+
+Required capabilities:
+- Soft delete (recoverable) as default delete behavior
+- Hard delete (irreversible) restricted to admins
+- Archive flag/state that removes record from default listings
+- Basic retention support: ability to mark records with retention period metadata
+
+Rules:
+- Soft-deleted records MUST be excluded from default search/list results
+- Audit history MUST remain accessible for deleted/archived records (subject to authorization)
+- Hard delete MUST be audited (admin-only) and should optionally require confirmation reason/comment
+
+---
+
+### 4.9 Import/Export (Core)
+
+The platform MUST provide basic data portability for onboarding and adoption.
+
+Required capabilities:
+- CSV import into an entity with field mapping
+- CSV export of entity list/search results (respecting authorization)
+- Export entity metadata (schema/workflow/measures) as JSON/YAML for backup and migration
+
+OSS scope:
+- Advanced ETL, transformations, and scheduled imports are out of scope
+
+---
+
+### 4.10 Concurrency & Transaction Semantics (Core)
+
+The platform MUST define consistent concurrency and atomicity rules for edits and workflow transitions.
+
+Required capabilities:
+- Optimistic concurrency control (record version/ETag) to prevent lost updates
+- Atomic workflow transition: validate -> evaluate measures -> persist -> audit (all-or-nothing)
+- Idempotency for workflow transition requests (same transition request should not double-apply)
+
+Rules:
+- If optimistic concurrency fails, the API MUST return a clear conflict error
+- No partial state transitions are permitted on validation failure
 
 ### 4.3 Calculated Fields
 
@@ -413,6 +504,29 @@ Rules must NOT:
 
 ---
 
+### 6.4 Task & Assignment Model (Core)
+
+The platform MUST support a basic task/assignment model to represent ownership and approvals.
+
+Concepts:
+- A Task is linked to an entity record and may be created manually or by workflow transitions
+- Tasks have an assignee (user or role), status, due date, and optional priority
+- Workflow transitions may generate tasks for approvers/owners
+
+Minimum Task fields:
+- `taskId`, `entityId`, `recordId`
+- `title`, `description`
+- `assigneeType` (USER/ROLE), `assigneeId`
+- `status` (OPEN/IN_PROGRESS/DONE/CANCELLED)
+- `dueAt`, `createdAt`, `createdBy`
+- `workflowState` (optional snapshot)
+
+Rules:
+- Task visibility MUST respect authorization to the parent record
+- Tasks MUST be auditable (create/update/complete)
+
+---
+
 ## 7. Authorization Model (RBAC)
 
 ### 7.1 Roles
@@ -509,6 +623,45 @@ Excluded (Paid):
 
 ---
 
+### 11.1 Scheduler & Calendar (OSS)
+
+The platform MUST provide an OSS-level scheduler and lightweight calendar to support recurring compliance and operational activities.
+
+Use cases:
+- Create an audit task every 6 months
+- Remind weekly tank level entry for fuel consumption
+- Schedule periodic inspections and auto-create records/tasks
+
+Required capabilities:
+- Define schedules (one-time and recurring) using a rule such as iCal RRULE or equivalent metadata
+- Scheduler triggers can:
+  - Create a task linked to an entity record
+  - Create a new entity record based on a template
+  - Update a field (restricted: safe, deterministic updates only)
+
+Schedule definition (example):
+```yaml
+scheduleId: "fuel.tank.level.weekly"
+name: "Weekly Tank Level Entry"
+rrule: "FREQ=WEEKLY;BYDAY=MO;BYHOUR=9;BYMINUTE=0"
+timezone: "UTC"
+action:
+  type: "createTask"
+  task:
+    title: "Update tank level"
+    entityId: "TankLog"
+    assigneeType: "ROLE"
+    assigneeId: "Operations"
+    dueOffset: "P1D"
+```
+
+Rules:
+- Scheduler actions MUST be auditable
+- Scheduler MUST be tenant-safe (if multi-tenant is later enabled)
+- Scheduler MUST NOT call external systems in OSS
+
+---
+
 ## 12. Admin Capabilities (OSS)
 
 - User management
@@ -531,6 +684,15 @@ Excluded (Paid):
 - SAML
 - LDAP
 - MFA
+
+---
+
+### 13.1 Account Lifecycle (OSS)
+
+Required capabilities:
+- Password reset (token-based)
+- Admin disable/enable user
+- Basic rate limiting / lockout for repeated failed logins (configurable)
 
 ---
 
@@ -572,6 +734,8 @@ The following **must not** be implemented in OSS:
 - SLA & escalation logic
 - External system rule execution
 - User-written executable functions or scripts
+- Scheduled imports/ETL pipelines
+- External notification channels (SMS/Slack/Email gateways) beyond basic in-app
 
 ---
 
@@ -584,6 +748,8 @@ The OSS core must be capable of implementing at least:
 - Searchable list
 - Dashboard pinning
 - A budget availability rule using a measure
+- Attachments on Purchase Order (e.g., vendor quotation PDF)
+- Scheduled recurring task (e.g., 6-month audit reminder)
 
 This reference must be built **using the platform itself**.
 
