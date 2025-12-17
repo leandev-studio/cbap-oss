@@ -59,8 +59,10 @@ This repository **must NOT** include enterprise-only or monetized features.
 | - Workflow Engine            |
 | - Authorization Engine       |
 | - Validation/Rule Engine     |
-| - Task & Scheduler Engine   |
-| - Audit/History Engine      |
+| - Task & Scheduler Engine    |
+| - Audit/History Engine       |
+| - Replication Agent (base)   |
+| - Telemetry/Observability   |
 +--------------▲---------------+
                |
 +--------------┴---------------+
@@ -75,6 +77,8 @@ This repository **must NOT** include enterprise-only or monetized features.
 | Data Store & Search Index    |
 | - Schemaless Storage         |
 | - Denormalized Index         |
+| - Outbox/Inbox Logs          |
+| - Telemetry Store           |
 +------------------------------+
 ```
 
@@ -125,91 +129,6 @@ A **Property** is a field belonging to an entity.
 - `labelKey` (i18n key) and `labels` (optional per-locale overrides)
 
 ---
-
-### 4.6 Audit & Record History (Core)
-
-Beyond workflow transition audit trails, the platform MUST maintain a full, queryable history of changes for entity instances.
-
-Required capabilities:
-- Record creation, update, delete events are audited
-- Field-level diff capture (from -> to), including null handling
-- Actor identity (userId), timestamp, and source (UI/API)
-- Workflow transitions link to the same audit stream
-- Audit history is viewable per record and queryable by admins
-
-Minimum audit event schema:
-- `eventId`, `entityId`, `recordId`
-- `eventType` (CREATE/UPDATE/DELETE/TRANSITION)
-- `timestamp`, `actorUserId`
-- `changes[]` (fieldName, oldValue, newValue)
-- `schemaVersion`, `screenVersion`, `workflowState`
-
-Audit requirements:
-- Audit events MUST be immutable
-- Audit storage MUST be append-only
-- Authorization applies when viewing audit events (at least entity read permission)
-
----
-
-### 4.7 Attachments (Core)
-
-Entity instances MUST support attachments for common business scenarios (invoices, quotations, inspection photos, etc.).
-
-Required capabilities:
-- Attachment upload/download linked to an entity record
-- Metadata: filename, contentType, size, uploadedAt, uploadedBy
-- Authorization inherits from parent record (read/write)
-- Attachments are included in audit stream (upload/remove events)
-
-OSS scope:
-- Storage backend may be local or pluggable
-- Virus scanning and advanced DLP are out of scope
-
----
-
-### 4.8 Record Lifecycle: Soft Delete, Archive & Retention (Core)
-
-The platform MUST provide record lifecycle controls independent of workflow state.
-
-Required capabilities:
-- Soft delete (recoverable) as default delete behavior
-- Hard delete (irreversible) restricted to admins
-- Archive flag/state that removes record from default listings
-- Basic retention support: ability to mark records with retention period metadata
-
-Rules:
-- Soft-deleted records MUST be excluded from default search/list results
-- Audit history MUST remain accessible for deleted/archived records (subject to authorization)
-- Hard delete MUST be audited (admin-only) and should optionally require confirmation reason/comment
-
----
-
-### 4.9 Import/Export (Core)
-
-The platform MUST provide basic data portability for onboarding and adoption.
-
-Required capabilities:
-- CSV import into an entity with field mapping
-- CSV export of entity list/search results (respecting authorization)
-- Export entity metadata (schema/workflow/measures) as JSON/YAML for backup and migration
-
-OSS scope:
-- Advanced ETL, transformations, and scheduled imports are out of scope
-
----
-
-### 4.10 Concurrency & Transaction Semantics (Core)
-
-The platform MUST define consistent concurrency and atomicity rules for edits and workflow transitions.
-
-Required capabilities:
-- Optimistic concurrency control (record version/ETag) to prevent lost updates
-- Atomic workflow transition: validate -> evaluate measures -> persist -> audit (all-or-nothing)
-- Idempotency for workflow transition requests (same transition request should not double-apply)
-
-Rules:
-- If optimistic concurrency fails, the API MUST return a clear conflict error
-- No partial state transitions are permitted on validation failure
 
 ### 4.3 Calculated Fields
 
@@ -426,6 +345,312 @@ requestedQty <= measure("stock.available", { item: item, location: location })
 
 ---
 
+### 4.6 Audit & Record History (Core)
+
+Beyond workflow transition audit trails, the platform MUST maintain a full, queryable history of changes for entity instances.
+
+Required capabilities:
+- Record creation, update, delete events are audited
+- Field-level diff capture (from -> to), including null handling
+- Actor identity (userId), timestamp, and source (UI/API)
+- Workflow transitions link to the same audit stream
+- Audit history is viewable per record and queryable by admins
+
+Minimum audit event schema:
+- `eventId`, `entityId`, `recordId`
+- `eventType` (CREATE/UPDATE/DELETE/TRANSITION)
+- `timestamp`, `actorUserId`
+- `changes[]` (fieldName, oldValue, newValue)
+- `schemaVersion`, `screenVersion`, `workflowState`
+
+Audit requirements:
+- Audit events MUST be immutable
+- Audit storage MUST be append-only
+- Authorization applies when viewing audit events (at least entity read permission)
+
+---
+
+### 4.7 Attachments (Core)
+
+Entity instances MUST support attachments for common business scenarios (invoices, quotations, inspection photos, etc.).
+
+Required capabilities:
+- Attachment upload/download linked to an entity record
+- Metadata: filename, contentType, size, uploadedAt, uploadedBy
+- Authorization inherits from parent record (read/write)
+- Attachments are included in audit stream (upload/remove events)
+
+OSS scope:
+- Storage backend may be local or pluggable
+- Virus scanning and advanced DLP are out of scope
+
+---
+
+### 4.8 Record Lifecycle: Soft Delete, Archive & Retention (Core)
+
+The platform MUST provide record lifecycle controls independent of workflow state.
+
+Required capabilities:
+- Soft delete (recoverable) as default delete behavior
+- Hard delete (irreversible) restricted to admins
+- Archive flag/state that removes record from default listings
+- Basic retention support: ability to mark records with retention period metadata
+
+Rules:
+- Soft-deleted records MUST be excluded from default search/list results
+- Audit history MUST remain accessible for deleted/archived records (subject to authorization)
+- Hard delete MUST be audited (admin-only) and should optionally require confirmation reason/comment
+
+---
+
+### 4.9 Import/Export (Core)
+
+The platform MUST provide basic data portability for onboarding and adoption.
+
+Required capabilities:
+- CSV import into an entity with field mapping
+- CSV export of entity list/search results (respecting authorization)
+- Export entity metadata (schema/workflow/measures) as JSON/YAML for backup and migration
+
+OSS scope:
+- Advanced ETL, transformations, and scheduled imports are out of scope
+
+---
+
+### 4.10 Concurrency & Transaction Semantics (Core)
+
+The platform MUST define consistent concurrency and atomicity rules for edits and workflow transitions.
+
+Required capabilities:
+- Optimistic concurrency control (record version/ETag) to prevent lost updates
+- Atomic workflow transition: validate -> evaluate measures -> persist -> audit (all-or-nothing)
+- Idempotency for workflow transition requests (same transition request should not double-apply)
+
+Rules:
+- If optimistic concurrency fails, the API MUST return a clear conflict error
+- No partial state transitions are permitted on validation failure
+
+---
+
+### 4.11 Organization Topology & Facility Partitioning (Core)
+
+The platform MUST support organizational topology required for real-world deployments:
+- HQ (root)
+- Regional Office(s) (optional intermediate level)
+- Facility/Site(s) (leaf nodes where operational data is produced)
+
+#### 4.11.1 Topology Entities
+
+The platform MUST include a minimal set of core entities (system-managed):
+- `OrgUnit`
+  - `orgUnitId` (global unique ID)
+  - `tenantId`
+  - `type` (HQ | REGION | FACILITY)
+  - `name`
+  - `parentOrgUnitId` (null for HQ)
+  - `timezone`
+  - `status` (ACTIVE | INACTIVE)
+- `Facility`
+  - `facilityId` (alias of OrgUnit where type=FACILITY)
+  - `regionOrgUnitId` (optional parent linkage)
+
+Rules:
+- Exactly one HQ OrgUnit exists per tenant
+- Regions may have one or more Facilities
+- Facilities belong to exactly one parent OrgUnit (HQ or Region)
+
+#### 4.11.2 Record Partitioning Fields
+
+All records in the system MUST include:
+- `tenantId`
+- `facilityId` (nullable ONLY for HQ-owned/global records)
+
+Additionally, entities MUST declare a `scope` policy:
+- `LOCAL`  : data is owned and written at a Facility; replicated upward
+- `GLOBAL` : data is owned and written at HQ; replicated downward
+- `SHARED` : tenant-wide reference/master data; ownership must be configured (default HQ)
+
+Defaults:
+- Operational logs (e.g., inspections, tank logs) are LOCAL
+- Policies, limits, budgets are GLOBAL (HQ-owned)
+- Master/reference data (vendors, items) are SHARED (default HQ)
+
+---
+
+### 4.12 Replication Foundations (Core)
+
+The platform MUST include a base replication mechanism designed for intermittent connectivity and firewall constraints.
+
+#### 4.12.1 Replication Model (Base)
+
+- Facilities are authoritative for `LOCAL` data
+- HQ is authoritative for `GLOBAL` data
+- Replication is asynchronous and resilient to offline periods
+- The system uses an Outbox/Inbox pattern with idempotent processing
+
+#### 4.12.2 Outbox/Inbox Logs
+
+Each node (HQ/Region/Facility) MUST maintain:
+- `OutboxEvent` (append-only)
+- `InboxEvent` (append-only)
+
+Minimum OutboxEvent fields:
+- `eventId` (ULID/UUIDv7)
+- `tenantId`, `sourceOrgUnitId`, `sourceFacilityId` (optional)
+- `targetOrgUnitId` (nullable for broadcast to parent)
+- `occurredAt`
+- `eventType` (RECORD_UPSERT | RECORD_DELETE | TRANSITION | TASK_UPSERT | TASK_DECISION | COMMENT_ADD | ATTACHMENT_META)
+- `entityId`, `recordId` (if applicable)
+- `schemaVersion`
+- `payload` (serialized, versioned)
+
+Minimum InboxEvent fields:
+- `eventId` (same as Outbox)
+- `receivedAt`
+- `status` (RECEIVED | APPLIED | FAILED)
+- `error` (optional)
+
+Rules:
+- Events MUST be immutable and append-only
+- Processing MUST be idempotent (same eventId can be safely re-applied)
+- Applying an event MUST write to the audit stream where appropriate
+
+#### 4.12.3 Connectivity & Firewall Constraints
+
+The platform MUST support deployments where nodes are behind firewalls and cannot accept inbound connections.
+
+Supported connectivity patterns:
+- **Outbound-only from Facility to HQ/Region** (recommended): Facility polls/pushes events to a configured upstream URL when online
+- **Store-and-forward**: Facility continues operating offline; events queue in Outbox until connectivity returns
+- **Manual transfer (fallback)**: export/import of event bundles as files for air-gapped environments (optional but recommended)
+
+Rules:
+- Replication MUST NOT require inbound connections to Facilities
+- All replication transport MUST be authenticated and encrypted (e.g., HTTPS); enterprise auth enhancements are out of scope
+
+#### 4.12.4 Multi-Level Aggregation (HQ -> Region -> Facility)
+
+The topology supports multiple aggregation tiers:
+- Facility replicates to its parent (Region or HQ)
+- Region may aggregate and forward to HQ
+
+OSS scope:
+- Base forwarding and idempotent apply
+- Advanced conflict resolution UI, monitoring dashboards, and automated repair are out of scope
+
+
+#### 4.12.5 Conflict Policy (Base)
+
+To prevent rewrites later, the platform MUST define default conflict rules:
+- LOCAL entities: writes are allowed only at the owning Facility; upstream nodes apply as read-only
+- GLOBAL entities: writes allowed only at HQ; downstream nodes apply as read-only
+- SHARED entities: default HQ-owned; configurable ownership is future scope
+
+If an upstream receives a write for a record it does not own, it MUST:
+- Reject (do not apply) and record a FAILED InboxEvent with reason
+
+#### 4.12.6 Cross-Org Approvals (Base)
+
+Real-world workflows may require approvals across OrgUnits (Facility -> Region -> HQ) while preserving record ownership.
+
+Principles:
+- The owning Facility remains the system of record for `LOCAL` operational entities (e.g., PurchaseOrder)
+- Upstream OrgUnits (Region/HQ) receive a read-only projection for review
+- Upstream actors do not edit the record; they issue decisions (approve/reject/request-changes)
+- Decisions are replicated back to the owning Facility and applied as workflow transitions there
+
+##### A) Routing & Tasks
+- When a record enters an approval step that requires upstream review, the owning node MUST create a Task assigned to a user/role at the target OrgUnit
+- The Task and a read-only record projection MUST be replicated to the target OrgUnit
+- Approvers act on the Task, not by editing the record
+
+##### B) Decision Event (TASK_DECISION)
+A decision is represented as an outbound event from the approver OrgUnit to the owning OrgUnit.
+
+Minimum decision payload:
+- `taskId`, `entityId`, `recordId`
+- `decision` (APPROVE | REJECT | REQUEST_CHANGES)
+- `comment` (optional but recommended)
+- `decidedByUserId`, `decidedAt`
+- `recordVersionSeen` (the version the approver reviewed)
+
+Rules:
+- Decisions MUST be auditable and immutable
+- The owning node MUST validate that the decision matches the current workflow step
+- If `recordVersionSeen` is stale (record has changed since approval view), the decision MUST NOT be applied automatically; it MUST be marked as STALE and a re-review task SHOULD be generated
+- REQUEST_CHANGES MUST transition the record to a Facility-editable state (e.g., ReworkRequested) and include the approver comment in the audit stream
+
+---
+
+### 4.13 Telemetry & Observability (Core)
+
+The platform MUST provide built-in telemetry to support on-prem and cloud operations, support diagnostics, and usage insights.
+
+Principles:
+- Telemetry MUST be non-blocking and asynchronous (never fail business operations)
+- Telemetry MUST be configurable and transparent (admins can view what is collected)
+- Telemetry MUST be privacy-preserving by default (no business field values, no attachment content)
+- Telemetry MUST be topology-aware (HQ/Region/Facility) and tolerate offline periods
+
+#### 4.13.1 Telemetry Categories (OSS)
+
+The platform MUST capture structured events in these categories:
+- SYSTEM (startup/shutdown, health)
+- API (request counts, latency buckets, error rates; no payload logging by default)
+- WORKFLOW (transition failures, time-in-state metrics)
+- RULES/MEASURES (evaluation errors, slow evaluations)
+- REPLICATION (outbox backlog, last sync time, apply failures)
+- SCHEDULER (missed runs, job failures)
+- SECURITY (failed logins, permission denials)
+
+#### 4.13.2 Telemetry Event Schema (Minimum)
+
+Telemetry MUST be stored as structured events (append-only):
+
+- `telemetryEventId` (ULID/UUIDv7)
+- `tenantId`, `orgUnitId`, `facilityId` (optional)
+- `timestamp`
+- `category`, `severity` (INFO | WARN | ERROR)
+- `component` (e.g., WorkflowEngine, Replicator, Scheduler)
+- `operation` (e.g., Transition, ApplyEvent, RunSchedule)
+- `correlationId` (propagated across API -> workflow -> rules -> replication/scheduler)
+- `summary`
+- `attributes` (key/value, size-limited, no business field values)
+
+Rules:
+- Telemetry events MUST NOT include business record field values by default
+- Telemetry events MUST NOT include attachment content
+- Telemetry events SHOULD include stable identifiers (entityId/recordId) only when necessary for diagnostics
+
+#### 4.13.3 Local Telemetry Store & Retention (OSS)
+
+- Telemetry MUST be stored locally on each node (PostgreSQL table or equivalent)
+- Retention MUST be configurable (e.g., 7/30/90 days)
+- Storage MUST be bounded (size limits, sampling/throttling when saturated)
+- Admins MUST be able to view and export telemetry locally
+
+#### 4.13.4 Support Bundle Export (OSS)
+
+The platform SHOULD support exporting a diagnostics bundle for support:
+- Selected telemetry range
+- Replication status summary (queue depth, last sync)
+- Application version/build info and node identity
+- Optional logs (configurable), sanitized by default
+
+Bundles MUST be exportable as files for air-gapped environments.
+
+#### 4.13.5 Optional Upstream Telemetry Forwarding (OSS-safe)
+
+The platform MAY support forwarding telemetry upstream (Facility -> Region/HQ) using an Outbox-style mechanism.
+
+Rules:
+- Forwarding MUST be opt-in and explicitly configured
+- Forwarding MUST use outbound-only connectivity (no inbound requirement on facilities)
+- Forwarding MUST apply filtering/sampling controls
+
+Paid/Enterprise scope:
+- Centralized fleet dashboards, anomaly detection, alerting, auto-triage
+
 ## 5. Schema & Versioning Model
 
 ### 5.1 Schema Version
@@ -463,6 +688,8 @@ A workflow consists of:
 - `actionLabel`
 - `conditions` (simple rules only in OSS)
 - `allowedRoles`
+
+Workflows MAY include cross-OrgUnit approval steps. In such cases, upstream approvers act via Tasks and emit decisions; the owning OrgUnit applies the resulting transition after validating the workflow step and record version.
 
 ---
 
@@ -512,6 +739,7 @@ Concepts:
 - A Task is linked to an entity record and may be created manually or by workflow transitions
 - Tasks have an assignee (user or role), status, due date, and optional priority
 - Workflow transitions may generate tasks for approvers/owners
+- Tasks may accept decisions (approve/reject/request-changes) which are emitted as TASK_DECISION events when the assignee is in a different OrgUnit than the record owner
 
 Minimum Task fields:
 - `taskId`, `entityId`, `recordId`
@@ -520,10 +748,12 @@ Minimum Task fields:
 - `status` (OPEN/IN_PROGRESS/DONE/CANCELLED)
 - `dueAt`, `createdAt`, `createdBy`
 - `workflowState` (optional snapshot)
+- `ownerOrgUnitId` (OrgUnit that owns the parent record), `assigneeOrgUnitId` (OrgUnit of assignee)
 
 Rules:
 - Task visibility MUST respect authorization to the parent record
 - Tasks MUST be auditable (create/update/complete)
+- When a Task is completed with a decision by a non-owning OrgUnit, the decision MUST be replicated to the owning OrgUnit as a TASK_DECISION event
 
 ---
 
@@ -670,6 +900,8 @@ Rules:
 - Workflow definition (basic grid)
 - Measure definition (metadata CRUD)
 - System configuration
+- Org topology management (create HQ/Region/Facility nodes)
+- Replication configuration (set upstream URL, credentials, and node identity)
 
 ---
 
@@ -736,6 +968,7 @@ The following **must not** be implemented in OSS:
 - User-written executable functions or scripts
 - Scheduled imports/ETL pipelines
 - External notification channels (SMS/Slack/Email gateways) beyond basic in-app
+- Replication monitoring dashboards, auto-heal, and conflict resolution UI
 
 ---
 
