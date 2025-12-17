@@ -71,6 +71,7 @@ This repository **must NOT** include enterprise-only or monetized features.
 | - Entity Definitions         |
 | - Workflow Definitions       |
 | - Measures (Declarative Fn)  |
+| - Document Definitions      |
 | - Schema & Screen Versions   |
 +--------------▲---------------+
                |
@@ -655,6 +656,142 @@ Paid/Enterprise scope:
 ---
 
 ### 4.14 Licensing & Entitlements (Core)
+---
+
+### 4.15 Document Control & Managed Content (Core)
+
+The platform MUST provide a foundational document control capability to support process documentation, system documentation, and compliance use cases.
+
+Document Control is distinct from Attachments:
+- Attachments are unversioned evidence linked to records
+- Controlled Documents are versioned, lifecycle-managed content governed by workflow
+
+Controlled Documents MUST be implemented using the same metadata-driven principles as other entities.
+
+#### 4.15.1 Controlled Document Entity (OSS)
+
+The platform MUST provide a system entity for managed documents.
+
+Minimum `ControlledDocument` attributes:
+- `documentId` (stable, human-readable identifier)
+- `title`
+- `description`
+- `documentType` (POLICY | SOP | MANUAL | WORK_INSTRUCTION | RECORD)
+- `category` / `tags`
+- `ownerOrgUnitId` (HQ / Region / Facility)
+- `scope` (GLOBAL | LOCAL)
+- `status` (DRAFT | IN_REVIEW | APPROVED | PUBLISHED | RETIRED)
+- `currentDraftVersion`
+- `currentPublishedVersion`
+- `reviewInterval` (optional)
+- `nextReviewDate` (optional)
+
+Rules:
+- Ownership determines who may edit and approve
+- `GLOBAL` documents are owned by HQ; `LOCAL` documents by Facility
+- Status transitions MUST be enforced via workflow
+
+#### 4.15.2 Document Lifecycle & Workflow (OSS)
+
+The OSS core MUST support a basic document lifecycle using workflow:
+- Draft → Review → Approved → Published → Retired
+
+Capabilities:
+- Only Draft documents are editable
+- Review and Approval are read-only with comment capability
+- Published documents are immutable
+- Retired documents remain viewable but are clearly marked inactive
+
+Workflow transitions MUST be:
+- Auditable
+- Authorization-controlled
+- Version-aware
+
+#### 4.15.3 Document Versioning (OSS)
+
+Controlled Documents MUST support versioning suitable for audits.
+
+Rules:
+- Draft edits increment a working version (e.g., 1.1-draft)
+- Publishing creates an immutable `DocumentRevision`
+- Published revisions MUST NOT be modified or deleted
+- Multiple published revisions MAY exist; exactly one is active at a time
+- Historical revisions MUST remain accessible (subject to authorization)
+
+Minimum `DocumentRevision` attributes:
+- `revisionId`
+- `documentId`
+- `revisionNumber` (e.g., 1.0, 2.0)
+- `content` (HTML or Markdown)
+- `publishedAt`, `publishedBy`
+- `checksum` (optional, for integrity verification)
+
+#### 4.15.4 Authoring & Editing (OSS)
+
+OSS MUST provide a basic authoring experience:
+- Simple WYSIWYG or Markdown editor
+- Copy/paste support from common tools (e.g., Word)
+- Sanitized content storage and rendering
+
+OSS explicitly excludes:
+- Real-time collaboration
+- Track changes / redlining
+- Inline threaded comments with resolution
+
+#### 4.15.5 Linking Documents to Work (OSS Foundation)
+
+The platform MUST support linking controlled documents to operational context.
+
+Capabilities:
+- Link a document to an Entity type or specific record
+- Link a document to a Task (e.g., SOP attached to an approval task)
+- Display linked documents as read-only references
+
+Rules:
+- Linking MUST NOT duplicate content
+- Links MUST respect document authorization
+- Links MAY reference the active published revision only
+
+#### 4.15.6 Search & Discovery (OSS)
+
+OSS MUST support basic discovery:
+- Search by title, documentId, tags, category, status
+- Filter by ownerOrgUnit and scope
+- Optional full-text search in content if indexing is available
+
+#### 4.15.7 Audit & Compliance (OSS)
+
+The platform MUST audit:
+- Document creation
+- Content edits (draft)
+- Workflow transitions
+- Publication and retirement
+- Link creation/removal
+
+Audit events MUST:
+- Be immutable
+- Include actor, timestamp, version, and action
+- Be queryable by admins
+
+#### 4.15.8 Scheduler Integration (OSS)
+
+Controlled Documents MAY integrate with the scheduler:
+- Automatic review reminders based on `reviewInterval`
+- Task creation for document review/approval
+
+Scheduler-triggered actions MUST be auditable.
+
+#### 4.15.9 Explicitly Out of Scope (Paid Features)
+
+The following document control features are excluded from OSS and reserved for paid editions:
+- Real-time collaborative editing
+- Inline comments, redlining, and tracked changes
+- Multi-reviewer quorum and electronic signatures
+- Controlled distribution and read-acknowledgement tracking
+- Contextual section-level links (deep anchors)
+- Facility deviations, waivers, and local overrides of GLOBAL documents
+- Advanced audit reports and compliance dashboards
+- External document repository integrations (SharePoint, S3, etc.)
 
 The platform MUST support a modern licensing and entitlement model to enable trials, subscription enforcement, and feature gating across on-prem and cloud deployments.
 
@@ -1018,6 +1155,7 @@ Rules:
 - Replication configuration (set upstream URL, credentials, and node identity)
 - Licensing configuration (set Primary Node, apply license, view entitlement status)
 - Trial/licensing status warnings and audit view
+- Controlled document management (create, publish, retire, link)
 
 ---
 
