@@ -3,7 +3,7 @@
 
 Version: 0.1  
 Status: Draft (Engineering Baseline)
-
+> New contributors should read `README_OSS_MENTAL_MODEL.md` before diving into implementation.
 ---
 
 ## 1. Purpose
