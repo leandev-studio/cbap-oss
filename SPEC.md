@@ -62,7 +62,8 @@ This repository **must NOT** include enterprise-only or monetized features.
 | - Task & Scheduler Engine    |
 | - Audit/History Engine       |
 | - Replication Agent (base)   |
-| - Telemetry/Observability   |
+| - Telemetry/Observability    |
+| - Licensing/Entitlements     |
 +--------------▲---------------+
                |
 +--------------┴---------------+
@@ -78,7 +79,7 @@ This repository **must NOT** include enterprise-only or monetized features.
 | - Schemaless Storage         |
 | - Denormalized Index         |
 | - Outbox/Inbox Logs          |
-| - Telemetry Store           |
+| - Telemetry Store            |
 +------------------------------+
 ```
 
@@ -651,6 +652,119 @@ Rules:
 Paid/Enterprise scope:
 - Centralized fleet dashboards, anomaly detection, alerting, auto-triage
 
+---
+
+### 4.14 Licensing & Entitlements (Core)
+
+The platform MUST support a modern licensing and entitlement model to enable trials, subscription enforcement, and feature gating across on-prem and cloud deployments.
+
+Principles:
+- Licensing MUST be node- and topology-aware (HQ/Region/Facility)
+- Licensing MUST tolerate offline operation via signed licenses and grace periods
+- Licensing MUST be enforceable via entitlements (feature flags + limits), not hardcoded checks
+- Licensing MUST be auditable and observable (telemetry events on validation failures, expiry, grace)
+
+#### 4.14.1 License Roles & Validation Node
+
+- License validation is performed by the **Primary Node** (typically HQ for a tenant).
+- Downstream nodes (Region/Facility) MUST consume the validated entitlement state replicated from the Primary Node.
+- Facilities MUST NOT require inbound connectivity for licensing.
+
+Definitions:
+- **Primary Node**: OrgUnit responsible for license validation and entitlement distribution.
+- **Entitlements**: Signed claims defining allowed features and limits.
+
+#### 4.14.2 Trial / Bootstrap Behavior
+
+- The platform MUST be installable without a license.
+- On first run, the platform MUST operate in **Trial Mode** for a configurable period (default 15 days).
+- During Trial Mode, the system SHOULD allow a reasonable default set of features and limits (configurable by distribution).
+- Prior to trial expiry, the system MUST warn admins (UI + telemetry).
+
+#### 4.14.3 Enrollment & License Application (Client-side)
+
+The Primary Node MUST support enrolling with a License Server (external) by submitting:
+- company name
+- admin name
+- email (required; must be verified by the license server)
+- phone (optional)
+- node/tenant identifiers
+
+The license server implementation is out of scope for this spec; the platform must provide the client-side integration points.
+
+#### 4.14.4 License Format & Verification (OSS-safe)
+
+- Licenses MUST be verifiable offline using cryptographic signatures (e.g., signed JWT/JWS).
+- The platform MUST embed the license server public key(s) (or allow admin import of public keys).
+- The platform MUST cache the current license and entitlement set locally.
+
+Minimum license claims:
+- `licenseId`
+- `tenantId`
+- `issuedAt`, `expiresAt`
+- `plan` (COMMUNITY | TRIAL | PRO | ENTERPRISE)
+- `entitlements` (feature flags + limits)
+- `primaryOrgUnitId`
+
+#### 4.14.5 Entitlements (Feature Flags + Limits)
+
+Entitlements MUST support:
+- Feature toggles (enable/disable modules such as advanced auth, multi-site dashboards, etc.)
+- Limit counters (e.g., maxFacilities, maxUsers, maxOrgUnits, maxRecordsPerEntity optional)
+
+Required limit for future enforcement:
+- `maxFacilities` (maximum number of FACILITY OrgUnits that may be created under the tenant)
+
+Enforcement points (minimum):
+- Org topology creation (creating a new Facility MUST check `maxFacilities`)
+- Admin-only actions that enable paid features MUST be gated by entitlements
+
+#### 4.14.6 Validation Frequency, Grace & Failure Behavior
+
+- The Primary Node MUST periodically re-validate license status (configurable interval; e.g., daily/weekly).
+- The platform MUST support a grace period when the license cannot be revalidated due to connectivity (configurable).
+- On license expiry or grace exhaustion, the system MUST enter a restricted mode:
+  - read-only access to existing data remains available (subject to authorization)
+  - creation of new Facilities and other gated actions MUST be blocked
+  - critical operational safety: existing records remain viewable/exportable
+
+#### 4.14.7 Entitlement Distribution to Downstream Nodes
+
+- The Primary Node MUST publish the current entitlement state to downstream nodes using the replication mechanism (e.g., as a GLOBAL record or event).
+- Downstream nodes MUST enforce limits using the last known entitlement state.
+- Entitlement changes MUST be auditable and replicated promptly.
+
+#### 4.14.8 Telemetry Requirements
+
+The platform MUST emit telemetry events for:
+- trial started / trial expiring / trial expired
+- license applied / license renewed / license expired
+- revalidation failures and grace-period countdown
+- blocked actions due to entitlement limits (e.g., maxFacilities exceeded)
+
+#### 4.14.9 Node Identity & Registration (Bootstrap)
+
+To support on-prem deployments behind firewalls, nodes MUST be able to register with the Primary Node using outbound-only connectivity.
+
+Bootstrap flow:
+- A newly installed node starts in **Unregistered Mode** with no tenant/org identity.
+- An admin provides:
+  - Primary Node URL (HQ/Region)
+  - a one-time `registrationToken` issued by the Primary Node
+- The node performs an outbound registration request and receives a **credential bundle**:
+  - `tenantId`
+  - `orgUnitId` and `orgUnitType` (FACILITY or REGION)
+  - `facilityId` (if applicable)
+  - replication upstream URL(s)
+  - replication credentials (e.g., client certificate or signed token)
+  - current entitlement snapshot (optional)
+
+Rules:
+- Registration MUST be auditable and emit telemetry events (registered, failed registration attempts)
+- Registration credentials MUST be revocable by admins on the Primary Node
+- If registration is not completed, the node MUST operate only in a limited local-admin mode and MUST NOT replicate data upstream
+- Registration MUST NOT require inbound connectivity to the node
+
 ## 5. Schema & Versioning Model
 
 ### 5.1 Schema Version
@@ -902,6 +1016,8 @@ Rules:
 - System configuration
 - Org topology management (create HQ/Region/Facility nodes)
 - Replication configuration (set upstream URL, credentials, and node identity)
+- Licensing configuration (set Primary Node, apply license, view entitlement status)
+- Trial/licensing status warnings and audit view
 
 ---
 
@@ -969,6 +1085,7 @@ The following **must not** be implemented in OSS:
 - Scheduled imports/ETL pipelines
 - External notification channels (SMS/Slack/Email gateways) beyond basic in-app
 - Replication monitoring dashboards, auto-heal, and conflict resolution UI
+- License server implementation and payment/billing workflows
 
 ---
 
