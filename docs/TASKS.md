@@ -48,13 +48,13 @@ Tasks are organized to:
   - [x] API: `POST /api/v1/auth/logout`
   - [x] API: `GET /api/v1/auth/me` (current user)
 
-- ⬜ **User Management Backend**
-  - [ ] User repository and service
-  - [ ] Admin user creation endpoint
-  - [ ] Password reset token generation
-  - [ ] API: `POST /api/v1/users` (admin only)
-  - [ ] API: `GET /api/v1/users/{id}`
-  - [ ] API: `PUT /api/v1/users/{id}/password` (reset)
+- ✅ **User Management Backend**
+  - [x] User repository and service
+  - [x] Admin user creation endpoint
+  - [x] Password reset token generation
+  - [x] API: `POST /api/v1/users` (admin only)
+  - [x] API: `GET /api/v1/users/{id}`
+  - [x] API: `PUT /api/v1/users/{id}/password` (reset)
 
 ### 1.2 Frontend Foundation
 - ⬜ **Application Shell**
