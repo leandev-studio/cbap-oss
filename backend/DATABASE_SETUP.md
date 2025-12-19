@@ -68,6 +68,39 @@ A helper script is available to create the database:
 ./scripts/setup-database.sh cbap_dev cbap cbap
 ```
 
+## Database Migrations
+
+Flyway automatically runs migrations on application startup. The migrations are located in:
+- **Source**: `backend/cbap-persistence/src/main/resources/db/migration/` (single source of truth)
+
+**Note**: Migrations are automatically copied from `cbap-persistence` to `cbap-app` during the Maven build process using the `maven-resources-plugin`. This ensures a single source of truth and prevents duplication issues.
+
+### Migration Files
+
+- **V1__Create_infrastructure_tables.sql**: Creates infrastructure tables (users, roles, permissions, org_units)
+- **V2__Create_metadata_foundation.sql**: Creates metadata foundation tables (entities, properties)
+- **V3__Seed_initial_data.sql**: Inserts seed data (default roles, permissions, admin user)
+
+### Verifying Migrations
+
+After running the application, verify the schema:
+
+```bash
+# Using the verification script
+./scripts/test-database-connection.sh
+
+# Or manually check
+psql -h localhost -U cbap -d cbap -f scripts/verify-database-schema.sql
+```
+
+### Default Credentials
+
+After migrations run, you can log in with:
+- **Username**: `admin`
+- **Password**: `admin123` (change on first login)
+
+**Note**: The default password is for development only. Change it in production!
+
 ## Current Configuration
 
 - **Default (no profile)**: `cbap` database

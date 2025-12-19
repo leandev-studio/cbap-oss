@@ -58,7 +58,7 @@ spring:
 - Dev profile (`--spring.profiles.active=dev`): Uses `cbap_dev` database
 - Prod profile (`--spring.profiles.active=prod`): Uses production database
 
-Flyway migrations run automatically on startup.
+Flyway migrations run automatically on startup. Migrations are located in `cbap-persistence/src/main/resources/db/migration/` and are automatically copied to `cbap-app` during the build process.
 
 ## API
 
