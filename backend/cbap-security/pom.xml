@@ -23,6 +23,11 @@
             <artifactId>cbap-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.cbap</groupId>
+            <artifactId>cbap-persistence</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         
         <!-- Spring Security -->
         <dependency>
