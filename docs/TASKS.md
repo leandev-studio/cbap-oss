@@ -31,22 +31,22 @@ Tasks are organized to:
 *Goal: Users can log in and see a basic application*
 
 ### 1.1 Backend Foundation
-- ⬜ **Database Setup**
-  - [ ] Create Flyway migration for infrastructure tables (users, roles, permissions)
-  - [ ] Create base schema for metadata storage
-  - [ ] Set up PostgreSQL connection and test
+- ✅ **Database Setup**
+  - [x] Create Flyway migration for infrastructure tables (users, roles, permissions)
+  - [x] Create base schema for metadata storage
+  - [x] Set up PostgreSQL connection and test
 
-- ⬜ **Authentication Backend**
-  - [ ] User entity/model (username, password hash, roles, status)
-  - [ ] Role entity/model (roleId, name, permissions)
-  - [ ] Password hashing service (BCrypt)
-  - [ ] JWT token generation and validation
-  - [ ] Authentication service (login, logout, token refresh)
-  - [ ] Spring Security configuration (JWT-based)
-  - [ ] Basic rate limiting for login attempts
-  - [ ] API: `POST /api/v1/auth/login`
-  - [ ] API: `POST /api/v1/auth/logout`
-  - [ ] API: `GET /api/v1/auth/me` (current user)
+- ✅ **Authentication Backend**
+  - [x] User entity/model (username, password hash, roles, status)
+  - [x] Role entity/model (roleId, name, permissions)
+  - [x] Password hashing service (BCrypt)
+  - [x] JWT token generation and validation
+  - [x] Authentication service (login, logout, token refresh)
+  - [x] Spring Security configuration (JWT-based)
+  - [x] Basic rate limiting for login attempts
+  - [x] API: `POST /api/v1/auth/login`
+  - [x] API: `POST /api/v1/auth/logout`
+  - [x] API: `GET /api/v1/auth/me` (current user)
 
 - ⬜ **User Management Backend**
   - [ ] User repository and service

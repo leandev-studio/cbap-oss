@@ -59,3 +59,13 @@ cbap:
       host: ${OPENSEARCH_HOST:localhost}
       port: ${OPENSEARCH_PORT:9200}
       scheme: ${OPENSEARCH_SCHEME:http}
+  
+  security:
+    jwt:
+      secret: ${JWT_SECRET:cbap-oss-secret-key-change-in-production-min-256-bits}
+      expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+      refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+    rate-limit:
+      login:
+        max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+        lockout-duration-minutes: ${LOGIN_LOCKOUT_DURATION:30}
