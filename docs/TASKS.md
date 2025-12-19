@@ -102,20 +102,20 @@ Tasks are organized to:
   - [x] User profile menu (logout, settings)
 
 ### 2.2 Dashboard Foundation
-- ⬜ **Backend: Dashboard Metadata**
-  - [ ] Dashboard metadata model
-  - [ ] Dashboard service
-  - [ ] API: `GET /api/v1/dashboard`
-  - [ ] API: `POST /api/v1/dashboard/pins` (pin searches/lists)
+- ✅ **Backend: Dashboard Metadata**
+  - [x] Dashboard metadata model
+  - [x] Dashboard service
+  - [x] API: `GET /api/v1/dashboard`
+  - [x] API: `POST /api/v1/dashboard/pins` (pin searches/lists)
 
-- ⬜ **Frontend: Dashboard UI**
-  - [ ] Dashboard page component
-  - [ ] Dashboard layout (grid system)
-  - [ ] Pinned searches widget
-  - [ ] Pinned entity lists widget
-  - [ ] Recent activity widget (placeholder)
-  - [ ] Tasks summary widget (placeholder)
-  - [ ] Auto-layout for widgets
+- ✅ **Frontend: Dashboard UI**
+  - [x] Dashboard page component
+  - [x] Dashboard layout (grid system)
+  - [x] Pinned searches widget
+  - [x] Pinned entity lists widget
+  - [x] Recent activity widget (placeholder)
+  - [x] Tasks summary widget (placeholder)
+  - [x] Auto-layout for widgets
 
 **Phase 2 Deliverable**: Users can navigate and see a personalized dashboard
 
