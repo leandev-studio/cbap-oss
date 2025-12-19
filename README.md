@@ -101,8 +101,9 @@ CREATE DATABASE cbap;
 ## Documentation
 
 - **[SPEC.md](docs/SPEC.md)**: Complete platform specification
+- **[TASKS.md](docs/TASKS.md)**: Implementation tasks organized by UX-first phases ⭐ **Start here for development**
 - **[OSS_MENTAL_MODEL.md](docs/OSS_MENTAL_MODEL.md)**: Contributor mental model
-- **[AGENT_GUIDE.md](docs/AGENT_GUIDE.md)**: Comprehensive guide for AI agents and contributors ⭐ **Start here for development**
+- **[AGENT_GUIDE.md](docs/AGENT_GUIDE.md)**: Comprehensive guide for AI agents and contributors
 - **[AGENT_QUICK_REFERENCE.md](docs/AGENT_QUICK_REFERENCE.md)**: Quick reference card for common tasks
 - **[TECH_STACK_AND_PROJECT_STRUCTURE_GUIDE.md](docs/TECH_STACK_AND_PROJECT_STRUCTURE_GUIDE.md)**: Technology choices and project structure
 - **[COLOR_GUIDE.md](docs/COLOR_GUIDE.md)**: UI color system and theming
