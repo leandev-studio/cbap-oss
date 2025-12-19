@@ -38,6 +38,9 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
+        // Log that the endpoint was reached
+        System.out.println("=== LOGIN ENDPOINT REACHED ===");
+        System.out.println("Username: " + request.getUsername());
         try {
             AuthenticationService.AuthenticationResponse response = authenticationService.login(
                     request.getUsername(),

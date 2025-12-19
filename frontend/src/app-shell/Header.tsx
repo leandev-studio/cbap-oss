@@ -1,7 +1,8 @@
-import { AppBar, Toolbar, Typography, Box, IconButton } from '@mui/material';
-import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { AppBar, Toolbar, Typography, Box, IconButton, Menu, MenuItem } from '@mui/material';
+import { Brightness4, Brightness7, AccountCircle } from '@mui/icons-material';
 import { toggleTheme, getInitialTheme } from '../shared/utils/theme';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../shared/context/AuthContext';
 
 /**
  * Application Header Component
@@ -10,6 +11,8 @@ import { useState, useEffect } from 'react';
  */
 export function Header() {
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(getInitialTheme());
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const { user, logout } = useAuth();
 
   // Update theme when it changes
   useEffect(() => {
@@ -34,6 +37,19 @@ export function Header() {
     setCurrentTheme(newTheme);
     // Dispatch custom event to notify other components
     window.dispatchEvent(new Event('themechange'));
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleMenuClose();
+    logout();
   };
 
   return (
@@ -73,21 +89,59 @@ export function Header() {
             CBAP
           </Typography>
           
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <IconButton
-              onClick={handleThemeToggle}
-              color="inherit"
-              aria-label="toggle theme"
-              sx={{
-                color: 'text.primary',
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
-              }}
-            >
-              {currentTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
-            </IconButton>
-          </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton
+            onClick={handleThemeToggle}
+            color="inherit"
+            aria-label="toggle theme"
+            sx={{
+              color: 'text.primary',
+              '&:hover': {
+                backgroundColor: 'action.hover',
+              },
+            }}
+          >
+            {currentTheme === 'dark' ? <Brightness7 /> : <Brightness4 />}
+          </IconButton>
+
+          {user && (
+            <>
+              <IconButton
+                onClick={handleMenuOpen}
+                color="inherit"
+                aria-label="user menu"
+                sx={{
+                  color: 'text.primary',
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
+                }}
+              >
+                <AccountCircle />
+              </IconButton>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+                anchorOrigin={{
+                  vertical: 'bottom',
+                  horizontal: 'right',
+                }}
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+              >
+                <MenuItem disabled>
+                  <Typography variant="body2" color="text.secondary">
+                    {user.username}
+                  </Typography>
+                </MenuItem>
+                <MenuItem onClick={handleLogout}>Logout</MenuItem>
+              </Menu>
+            </>
+          )}
+        </Box>
         </Box>
       </Toolbar>
     </AppBar>

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import App from './App';
+import { AuthProvider } from './shared/context/AuthContext';
 import { createAppTheme } from './shared/theme';
 import { initializeTheme, getInitialTheme, Theme } from './shared/utils/theme';
 import './shared/styles/global.css';
@@ -59,7 +60,9 @@ function AppWithTheme() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

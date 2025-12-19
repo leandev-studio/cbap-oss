@@ -45,7 +45,17 @@ spring:
     baseline-on-migrate: true
 ```
 
-**Important**: This directory (`cbap-persistence/src/main/resources/db/migration/`) is the **single source of truth** for all Flyway migrations. The migrations are automatically copied to `cbap-app` during the Maven build process using the `maven-resources-plugin`, so you should **never** manually copy or create migrations in `cbap-app/src/main/resources/db/migration/`.
+**Important**: This directory (`cbap-persistence/src/main/resources/db/migration/`) is the **single source of truth** for all Flyway migrations. 
+
+**How it works:**
+1. Migrations are stored here in `cbap-persistence/src/main/resources/db/migration/`
+2. During the Maven build, the `maven-resources-plugin` in `cbap-app` copies them to `cbap-app/target/classes/db/migration/`
+3. Migrations are **excluded from the `cbap-persistence` JAR** to prevent duplicates
+4. Flyway reads migrations from `classpath:db/migration` (which resolves to the copied location)
+
+**You should NEVER:**
+- Manually copy or create migrations in `cbap-app/src/main/resources/db/migration/`
+- Include migration files in the `cbap-persistence` JAR (they are automatically excluded)
 
 ## Verification
 

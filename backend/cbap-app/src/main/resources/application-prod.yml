@@ -13,3 +13,7 @@ logging:
 cbap:
   node:
     mode: REGISTERED
+  
+  cors:
+    allowed-origins:
+      - ${FRONTEND_ORIGIN:https://your-frontend-domain.com}

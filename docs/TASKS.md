@@ -63,17 +63,17 @@ Tasks are organized to:
   - [x] CSS variables integration
   - [x] Responsive layout foundation
 
-- ⬜ **Authentication UI**
-  - [ ] Login page component
-    - [ ] Username/password form
-    - [ ] Error message display
-    - [ ] Loading states
-    - [ ] Remember me option
-  - [ ] Login service/API integration
-  - [ ] Token storage (localStorage)
-  - [ ] Protected route wrapper
-  - [ ] Redirect after login
-  - [ ] Logout functionality
+- ✅ **Authentication UI**
+  - [x] Login page component
+    - [x] Username/password form
+    - [x] Error message display
+    - [x] Loading states
+    - [x] Remember me option
+  - [x] Login service/API integration
+  - [x] Token storage (localStorage)
+  - [x] Protected route wrapper
+  - [x] Redirect after login
+  - [x] Logout functionality
 
 - ⬜ **Initial Landing Page**
   - [ ] Welcome message
