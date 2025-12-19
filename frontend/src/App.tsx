@@ -3,6 +3,7 @@ import { AppShell } from './app-shell/AppShell';
 import { DashboardPage } from './dashboard-ui/DashboardPage';
 import { EntitiesOverviewPage } from './metadata-ui/EntitiesOverviewPage';
 import { EntityListPage } from './metadata-ui/EntityListPage';
+import { EntityDetailPage } from './metadata-ui/EntityDetailPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -32,6 +33,14 @@ function App() {
           element={
             <ProtectedRoute>
               <EntityListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="entities/:entityId/records/:recordId"
+          element={
+            <ProtectedRoute>
+              <EntityDetailPage />
             </ProtectedRoute>
           }
         />

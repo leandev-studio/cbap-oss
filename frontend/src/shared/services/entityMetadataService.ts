@@ -15,6 +15,7 @@ export interface PropertyDefinition {
   referenceEntityId?: string;
   calculationExpression?: string;
   metadataJson?: Record<string, any>;
+  description?: string;
 }
 
 /**
