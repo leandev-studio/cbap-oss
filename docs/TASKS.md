@@ -145,16 +145,16 @@ Tasks are organized to:
   - [x] Authorization checks on all endpoints
 
 ### 3.2 Frontend: Entity List View
-- ⬜ **Metadata-Driven List Component**
-  - [ ] Entity list page component
-  - [ ] Load entity definition from metadata
-  - [ ] Generate table columns from property definitions
-  - [ ] Display records in table/grid
-  - [ ] Pagination
-  - [ ] Sorting by columns
-  - [ ] Basic filtering (text search)
-  - [ ] Row selection
-  - [ ] Link to detail view
+- ✅ **Metadata-Driven List Component**
+  - [x] Entity list page component
+  - [x] Load entity definition from metadata
+  - [x] Generate table columns from property definitions
+  - [x] Display records in table/grid
+  - [x] Pagination
+  - [x] Sorting by columns
+  - [x] Basic filtering (text search)
+  - [x] Row selection
+  - [x] Link to detail view
 
 ### 3.3 Frontend: Entity Detail View
 - ⬜ **Metadata-Driven Detail Component**

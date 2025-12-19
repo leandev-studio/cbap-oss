@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './app-shell/AppShell';
 import { DashboardPage } from './dashboard-ui/DashboardPage';
+import { EntitiesOverviewPage } from './metadata-ui/EntitiesOverviewPage';
+import { EntityListPage } from './metadata-ui/EntityListPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -14,6 +16,22 @@ function App() {
           element={
             <ProtectedRoute>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="entities"
+          element={
+            <ProtectedRoute>
+              <EntitiesOverviewPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="entities/:entityId"
+          element={
+            <ProtectedRoute>
+              <EntityListPage />
             </ProtectedRoute>
           }
         />

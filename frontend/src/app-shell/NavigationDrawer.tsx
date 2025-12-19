@@ -91,7 +91,10 @@ function NavigationItemComponent({
     if (hasChildren) {
       setOpen(!open);
     } else if (item.routePath) {
+      console.log('Navigating to:', item.routePath); // Debug log
       onNavigate(item.routePath);
+    } else {
+      console.warn('Navigation item has no routePath:', item); // Debug log
     }
   };
 
