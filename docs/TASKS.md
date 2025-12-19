@@ -125,24 +125,24 @@ Tasks are organized to:
 *Goal: Users can view entity lists and details*
 
 ### 3.1 Backend: Entity Metadata & Storage
-- ⬜ **Entity Metadata**
-  - [ ] Entity definition model (entityId, name, properties, workflow, etc.)
-  - [ ] Property definition model (propertyId, type, label, validation, etc.)
-  - [ ] Entity metadata repository
-  - [ ] Entity metadata service (CRUD)
-  - [ ] API: `GET /api/v1/metadata/entities`
-  - [ ] API: `GET /api/v1/metadata/entities/{entityId}`
-  - [ ] API: `POST /api/v1/metadata/entities` (admin)
-  - [ ] API: `PUT /api/v1/metadata/entities/{entityId}` (admin)
+- ✅ **Entity Metadata**
+  - [x] Entity definition model (entityId, name, properties, workflow, etc.)
+  - [x] Property definition model (propertyId, type, label, validation, etc.)
+  - [x] Entity metadata repository
+  - [x] Entity metadata service (CRUD)
+  - [x] API: `GET /api/v1/metadata/entities`
+  - [x] API: `GET /api/v1/metadata/entities/{entityId}`
+  - [x] API: `POST /api/v1/metadata/entities` (admin)
+  - [x] API: `PUT /api/v1/metadata/entities/{entityId}` (admin)
 
-- ⬜ **Entity Records Storage**
-  - [ ] Entity record model (recordId, entityId, data JSONB, schemaVersion, etc.)
-  - [ ] Entity record repository (JSONB storage)
-  - [ ] Entity record service
-  - [ ] Schema versioning support
-  - [ ] API: `GET /api/v1/entities/{entityId}/records`
-  - [ ] API: `GET /api/v1/entities/{entityId}/records/{recordId}`
-  - [ ] Authorization checks on all endpoints
+- ✅ **Entity Records Storage**
+  - [x] Entity record model (recordId, entityId, data JSONB, schemaVersion, etc.)
+  - [x] Entity record repository (JSONB storage)
+  - [x] Entity record service
+  - [x] Schema versioning support
+  - [x] API: `GET /api/v1/entities/{entityId}/records`
+  - [x] API: `GET /api/v1/entities/{entityId}/records/{recordId}`
+  - [x] Authorization checks on all endpoints
 
 ### 3.2 Frontend: Entity List View
 - ⬜ **Metadata-Driven List Component**
