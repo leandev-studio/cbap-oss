@@ -75,10 +75,10 @@ Tasks are organized to:
   - [x] Redirect after login
   - [x] Logout functionality
 
-- ⬜ **Initial Landing Page**
-  - [ ] Welcome message
-  - [ ] Basic user info display
-  - [ ] Placeholder for dashboard content
+- ✅ **Initial Landing Page**
+  - [x] Welcome message
+  - [x] Basic user info display
+  - [x] Placeholder for dashboard content
 
 **Phase 1 Deliverable**: Users can log in and see a basic landing page
 
