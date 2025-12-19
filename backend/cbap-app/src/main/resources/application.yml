@@ -3,7 +3,7 @@ spring:
     name: cbap-oss
   
   datasource:
-    url: jdbc:postgresql://localhost:5432/cbap
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cbap}
     username: ${DB_USERNAME:cbap}
     password: ${DB_PASSWORD:cbap}
     driver-class-name: org.postgresql.Driver

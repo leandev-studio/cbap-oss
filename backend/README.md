@@ -35,15 +35,28 @@ Configuration files are in `cbap-app/src/main/resources/`:
 
 ## Database
 
-Requires PostgreSQL. Update connection details in `application.yml`:
+Requires PostgreSQL. Create the database before running:
+
+```sql
+CREATE DATABASE cbap;
+-- Or for development:
+CREATE DATABASE cbap_dev;
+```
+
+Update connection details in `application.yml` or use environment variables:
 
 ```yaml
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/cbap
-    username: cbap
-    password: cbap
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cbap}
+    username: ${DB_USERNAME:cbap}
+    password: ${DB_PASSWORD:cbap}
 ```
+
+**Profiles:**
+- Default: Uses `cbap` database
+- Dev profile (`--spring.profiles.active=dev`): Uses `cbap_dev` database
+- Prod profile (`--spring.profiles.active=prod`): Uses production database
 
 Flyway migrations run automatically on startup.
 
