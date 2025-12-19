@@ -57,28 +57,28 @@ Tasks are organized to:
   - [x] API: `PUT /api/v1/users/{id}/password` (reset)
 
 ### 1.2 Frontend Foundation
-- ⬜ **Application Shell**
-  - [ ] Basic layout structure (header, main, footer)
-  - [ ] Theme provider setup (light/dark theme)
-  - [ ] CSS variables integration
-  - [ ] Responsive layout foundation
+- ✅ **Application Shell**
+  - [x] Basic layout structure (header, main, footer)
+  - [x] Theme provider setup (light/dark theme)
+  - [x] CSS variables integration
+  - [x] Responsive layout foundation
 
-- ⬜ **Authentication UI**
-  - [ ] Login page component
-    - [ ] Username/password form
-    - [ ] Error message display
-    - [ ] Loading states
-    - [ ] Remember me option
-  - [ ] Login service/API integration
-  - [ ] Token storage (localStorage)
-  - [ ] Protected route wrapper
-  - [ ] Redirect after login
-  - [ ] Logout functionality
+- ✅ **Authentication UI**
+  - [x] Login page component
+    - [x] Username/password form
+    - [x] Error message display
+    - [x] Loading states
+    - [x] Remember me option
+  - [x] Login service/API integration
+  - [x] Token storage (localStorage)
+  - [x] Protected route wrapper
+  - [x] Redirect after login
+  - [x] Logout functionality
 
-- ⬜ **Initial Landing Page**
-  - [ ] Welcome message
-  - [ ] Basic user info display
-  - [ ] Placeholder for dashboard content
+- ✅ **Initial Landing Page**
+  - [x] Welcome message
+  - [x] Basic user info display
+  - [x] Placeholder for dashboard content
 
 **Phase 1 Deliverable**: Users can log in and see a basic landing page
 

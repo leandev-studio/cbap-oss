@@ -91,9 +91,12 @@ ON CONFLICT (role_id, permission_id) DO NOTHING;
 -- ============================================================================
 -- DEFAULT ADMIN USER
 -- ============================================================================
--- Password: 'admin123' (BCrypt hash with cost 10)
+-- Password: 'admin123' (BCrypt hash with cost 12, matching PasswordHashingService)
 -- This is a default password - should be changed on first login
 -- In production, use environment variable or secure initialization
+-- 
+-- To generate a new hash, run:
+-- mvn exec:java -Dexec.mainClass="com.cbap.security.util.PasswordHashGenerator" -pl cbap-security
 INSERT INTO cbap_users (
     user_id,
     username,
@@ -105,7 +108,7 @@ INSERT INTO cbap_users (
 ) VALUES (
     '00000000-0000-0000-0000-000000000100',
     'admin',
-    '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- BCrypt hash of 'admin123'
+    '$2a$12$/9LuepbRMb1MRKjiy64ZSujYI.0Ie/alpfsZWApVF2KcpFNCMSeYm', -- BCrypt hash of 'admin123' (cost 12)
     'admin@cbap.local',
     'ACTIVE',
     CURRENT_TIMESTAMP,

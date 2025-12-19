@@ -9,6 +9,26 @@ spring:
     properties:
       hibernate:
         format_sql: true
+    # Ensure JPA repositories are properly configured
+    repositories:
+      enabled: true
+  
+  flyway:
+    # In dev, automatically repair checksums if migration files change
+    repair-on-migrate: true
+    # Validate migrations but allow repair
+    validate-on-migrate: true
+
+# CORS configuration for development
+cbap:
+  cors:
+    # Allow any localhost port during dev (frontend may run on different ports)
+    allowed-origin-patterns:
+      # Spring's allowedOriginPatterns supports wildcard ports via [*]
+      - "http://localhost:[*]"
+      - "http://127.0.0.1:[*]"
+    # Bearer-token auth; no cookies needed
+    allow-credentials: false
 
 logging:
   level:

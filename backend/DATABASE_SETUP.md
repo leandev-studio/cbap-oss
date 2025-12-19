@@ -72,8 +72,15 @@ A helper script is available to create the database:
 
 Flyway automatically runs migrations on application startup. The migrations are located in:
 - **Source**: `backend/cbap-persistence/src/main/resources/db/migration/` (single source of truth)
+- **Runtime**: `cbap-app/target/classes/db/migration/` (copied during build)
 
-**Note**: Migrations are automatically copied from `cbap-persistence` to `cbap-app` during the Maven build process using the `maven-resources-plugin`. This ensures a single source of truth and prevents duplication issues.
+**How it works:**
+1. Migrations are stored in `cbap-persistence/src/main/resources/db/migration/`
+2. During build, `maven-resources-plugin` copies them to `cbap-app/target/classes/db/migration/`
+3. Migrations are **excluded from the `cbap-persistence` JAR** to prevent Flyway from finding duplicates
+4. Flyway reads from `classpath:db/migration` (the copied location)
+
+This ensures a single source of truth and prevents duplicate migration errors.
 
 ### Migration Files
 
