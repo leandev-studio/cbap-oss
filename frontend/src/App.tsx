@@ -1,14 +1,15 @@
-import { Routes, Route } from 'react-router-dom';
-import { Box } from '@mui/material';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './app-shell/AppShell';
+import { LandingPage } from './pages/LandingPage';
 
 function App() {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Routes>
-        <Route path="/*" element={<AppShell />} />
-      </Routes>
-    </Box>
+    <Routes>
+      <Route path="/" element={<AppShell />}>
+        <Route index element={<LandingPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   );
 }
 

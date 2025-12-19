@@ -1,5 +1,7 @@
 import { Box, Container } from '@mui/material';
 import { Outlet } from 'react-router-dom';
+import { Header } from './Header';
+import { Footer } from './Footer';
 
 /**
  * Application Shell Component
@@ -10,14 +12,39 @@ import { Outlet } from 'react-router-dom';
  */
 export function AppShell() {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Header/Navigation will go here */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Container maxWidth="xl">
+    <Box 
+      sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        minHeight: '100vh',
+        backgroundColor: 'background.default',
+      }}
+    >
+      <Header />
+      
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1,
+          py: { xs: 2, sm: 3 },
+          px: { xs: 1, sm: '20px' }, // 20px margin on sides
+          width: '100%',
+          minHeight: 0, // Allow content to shrink
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           <Outlet />
-        </Container>
+        </Box>
       </Box>
-      {/* Footer will go here */}
+      
+      <Footer />
     </Box>
   );
 }

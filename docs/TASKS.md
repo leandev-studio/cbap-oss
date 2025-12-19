@@ -57,11 +57,11 @@ Tasks are organized to:
   - [x] API: `PUT /api/v1/users/{id}/password` (reset)
 
 ### 1.2 Frontend Foundation
-- ⬜ **Application Shell**
-  - [ ] Basic layout structure (header, main, footer)
-  - [ ] Theme provider setup (light/dark theme)
-  - [ ] CSS variables integration
-  - [ ] Responsive layout foundation
+- ✅ **Application Shell**
+  - [x] Basic layout structure (header, main, footer)
+  - [x] Theme provider setup (light/dark theme)
+  - [x] CSS variables integration
+  - [x] Responsive layout foundation
 
 - ⬜ **Authentication UI**
   - [ ] Login page component

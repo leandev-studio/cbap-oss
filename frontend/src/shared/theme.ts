@@ -1,7 +1,8 @@
-import { createTheme, ThemeOptions } from '@mui/material/styles';
+import { createTheme, ThemeOptions, Theme } from '@mui/material/styles';
+import { getInitialTheme } from './utils/theme';
 
 // Light theme colors (soft/pastel from COLOR_GUIDE.md)
-const lightTheme: ThemeOptions = {
+const lightThemeOptions: ThemeOptions = {
   palette: {
     mode: 'light',
     primary: {
@@ -70,6 +71,21 @@ const lightTheme: ThemeOptions = {
       styleOverrides: {
         root: {
           textTransform: 'none',
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
         },
       },
     },
@@ -77,7 +93,7 @@ const lightTheme: ThemeOptions = {
 };
 
 // Dark theme colors (soft/pastel from COLOR_GUIDE.md)
-const darkTheme: ThemeOptions = {
+const darkThemeOptions: ThemeOptions = {
   palette: {
     mode: 'dark',
     primary: {
@@ -146,12 +162,36 @@ const darkTheme: ThemeOptions = {
       styleOverrides: {
         root: {
           textTransform: 'none',
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
         },
       },
     },
   },
 };
 
-// Default to light theme, can be switched based on user preference
-export const theme = createTheme(lightTheme);
-export const darkThemeConfig = createTheme(darkTheme);
+/**
+ * Create a theme based on the current theme preference
+ */
+export function createAppTheme(mode: 'light' | 'dark' = 'light'): Theme {
+  return createTheme(mode === 'light' ? lightThemeOptions : darkThemeOptions);
+}
+
+// Get initial theme from storage or system preference
+const initialTheme = getInitialTheme();
+
+// Default theme (will be replaced by ThemeProvider with dynamic switching)
+export const theme = createAppTheme(initialTheme);

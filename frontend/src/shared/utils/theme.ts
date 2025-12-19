@@ -23,8 +23,8 @@ export function getInitialTheme(): Theme {
     return 'dark';
   }
 
-  // Default to light
-  return 'light';
+  // Default to dark
+  return 'dark';
 }
 
 /**
