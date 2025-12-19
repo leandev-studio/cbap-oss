@@ -1,15 +1,22 @@
-import { AppBar, Toolbar, Typography, Box, IconButton, Menu, MenuItem } from '@mui/material';
-import { Brightness4, Brightness7, AccountCircle } from '@mui/icons-material';
+import { AppBar, Toolbar, Typography, Box, IconButton, Menu, MenuItem, ListItemIcon } from '@mui/material';
+import { Brightness4, Brightness7, AccountCircle, Menu as MenuIcon, Settings } from '@mui/icons-material';
 import { toggleTheme, getInitialTheme } from '../shared/utils/theme';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../shared/context/AuthContext';
+import { useMediaQuery, useTheme } from '@mui/material';
 
 /**
  * Application Header Component
  * 
- * Provides the top navigation bar with theme toggle.
+ * Provides the top navigation bar with theme toggle and menu button.
  */
-export function Header() {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export function Header({ onMenuClick }: HeaderProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(getInitialTheme());
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user, logout } = useAuth();
@@ -77,6 +84,23 @@ export function Header() {
             px: { xs: 2, sm: '20px' }, // 20px margin on sides, matching main content
           }}
         >
+          {isMobile && onMenuClick && (
+            <IconButton
+              onClick={onMenuClick}
+              color="inherit"
+              aria-label="open navigation menu"
+              sx={{
+                color: 'text.primary',
+                mr: 1,
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                },
+              }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
+          
           <Typography 
             variant="h6" 
             component="div" 
@@ -136,6 +160,12 @@ export function Header() {
                   <Typography variant="body2" color="text.secondary">
                     {user.username}
                   </Typography>
+                </MenuItem>
+                <MenuItem onClick={handleMenuClose}>
+                  <ListItemIcon>
+                    <Settings fontSize="small" />
+                  </ListItemIcon>
+                  Settings
                 </MenuItem>
                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
               </Menu>

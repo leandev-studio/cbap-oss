@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserInfo, login as loginApi, logout as logoutApi, getCurrentUser, isAuthenticated, getAccessToken } from '../services/authService';
+import { UserInfo, login as loginApi, logout as logoutApi, getCurrentUser, isAuthenticated } from '../services/authService';
 
 interface AuthContextType {
   user: UserInfo | null;
