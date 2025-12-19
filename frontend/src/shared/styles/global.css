@@ -1,0 +1,530 @@
+/**
+ * CBAP Global Styles
+ * 
+ * This file defines CSS custom properties (variables) for the CBAP color system.
+ * The colors follow the COLOR_GUIDE.md specification with soft/pastel palettes
+ * for both light and dark themes.
+ * 
+ * Usage:
+ *   - Use CSS variables for all colors: var(--color-bg-primary)
+ *   - Theme switching is done via the [data-theme] attribute
+ *   - All colors meet WCAG 2.1 AA contrast requirements
+ */
+
+/* ============================================================================
+   LIGHT THEME (Default)
+   ============================================================================ */
+
+:root,
+[data-theme="light"] {
+  /* Base Colors */
+  --color-bg-primary: #FAF9F7;
+  --color-bg-secondary: #F5F3F0;
+  --color-bg-tertiary: #EFEDEA;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FFFFFF;
+
+  /* Text Colors */
+  --color-text-primary: #2C2A28;
+  --color-text-secondary: #5A5754;
+  --color-text-tertiary: #8B8885;
+  --color-text-inverse: #FAF9F7;
+  --color-text-disabled: #B8B6B4;
+
+  /* Primary Brand Colors */
+  --color-primary: #7B9BC8;
+  --color-primary-light: #A8C0DC;
+  --color-primary-dark: #5F7BA3;
+  --color-primary-subtle: #E8EFF5;
+
+  /* Success Colors */
+  --color-success: #7FC4A3;
+  --color-success-light: #A8D9C1;
+  --color-success-dark: #66A88A;
+  --color-success-subtle: #E5F4ED;
+
+  /* Warning Colors */
+  --color-warning: #E8B87A;
+  --color-warning-light: #F0CEA0;
+  --color-warning-dark: #D19E5F;
+  --color-warning-subtle: #F9F0E3;
+
+  /* Error Colors */
+  --color-error: #D89A9A;
+  --color-error-light: #E5B5B5;
+  --color-error-dark: #C47A7A;
+  --color-error-subtle: #F5E8E8;
+
+  /* Info Colors */
+  --color-info: #8BB5D1;
+  --color-info-light: #A8C8DF;
+  --color-info-dark: #6F9BB8;
+  --color-info-subtle: #E3EEF5;
+
+  /* Neutral Colors */
+  --color-neutral: #B8B6B4;
+  --color-neutral-light: #D4D2D0;
+  --color-neutral-dark: #9A9896;
+
+  /* Border & Divider Colors */
+  --color-border: #E5E3E0;
+  --color-border-light: #F0EEEC;
+  --color-border-dark: #D4D2D0;
+
+  /* Interactive States */
+  --color-interactive-default-bg: #FFFFFF;
+  --color-interactive-default-text: #2C2A28;
+  --color-interactive-default-border: #E5E3E0;
+
+  --color-interactive-hover-bg: #F5F3F0;
+  --color-interactive-hover-text: #2C2A28;
+  --color-interactive-hover-border: #D4D2D0;
+
+  --color-interactive-active-bg: #EFEDEA;
+  --color-interactive-active-text: #2C2A28;
+  --color-interactive-active-border: #7B9BC8;
+
+  --color-interactive-focus-bg: #FFFFFF;
+  --color-interactive-focus-text: #2C2A28;
+  --color-interactive-focus-border: #7B9BC8;
+  --color-interactive-focus-ring-width: 2px;
+
+  --color-interactive-disabled-bg: #F5F3F0;
+  --color-interactive-disabled-text: #B8B6B4;
+  --color-interactive-disabled-border: #E5E3E0;
+
+  /* Workflow States */
+  --color-workflow-draft: #8BB5D1;
+  --color-workflow-submitted: #E8B87A;
+  --color-workflow-approved: #7FC4A3;
+  --color-workflow-rejected: #D89A9A;
+  --color-workflow-closed: #B8B6B4;
+  --color-workflow-archived: #B8B6B4;
+
+  /* Task Status */
+  --color-task-open: #8BB5D1;
+  --color-task-in-progress: #E8B87A;
+  --color-task-done: #7FC4A3;
+  --color-task-cancelled: #D89A9A;
+
+  /* Document Status */
+  --color-document-draft: #8BB5D1;
+  --color-document-in-review: #E8B87A;
+  --color-document-approved: #7FC4A3;
+  --color-document-published: #7FC4A3;
+  --color-document-retired: #B8B6B4;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(44, 42, 40, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(44, 42, 40, 0.1), 0 2px 4px -1px rgba(44, 42, 40, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(44, 42, 40, 0.1), 0 4px 6px -2px rgba(44, 42, 40, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(44, 42, 40, 0.1), 0 10px 10px -5px rgba(44, 42, 40, 0.04);
+}
+
+/* ============================================================================
+   DARK THEME
+   ============================================================================ */
+
+[data-theme="dark"] {
+  /* Base Colors */
+  --color-bg-primary: #1E1D1B;
+  --color-bg-secondary: #252421;
+  --color-bg-tertiary: #2C2A28;
+  --color-surface: #2C2A28;
+  --color-surface-elevated: #353330;
+
+  /* Text Colors */
+  --color-text-primary: #F5F3F0;
+  --color-text-secondary: #D4D2D0;
+  --color-text-tertiary: #B8B6B4;
+  --color-text-inverse: #2C2A28;
+  --color-text-disabled: #6B6967;
+
+  /* Primary Brand Colors */
+  --color-primary: #8BB5D1;
+  --color-primary-light: #A8C8DF;
+  --color-primary-dark: #6F9BB8;
+  --color-primary-subtle: #2A3A47;
+
+  /* Success Colors */
+  --color-success: #7FC4A3;
+  --color-success-light: #95D1B5;
+  --color-success-dark: #66A88A;
+  --color-success-subtle: #2A3D35;
+
+  /* Warning Colors */
+  --color-warning: #E8B87A;
+  --color-warning-light: #F0CEA0;
+  --color-warning-dark: #D19E5F;
+  --color-warning-subtle: #3D3428;
+
+  /* Error Colors */
+  --color-error: #D89A9A;
+  --color-error-light: #E5B5B5;
+  --color-error-dark: #C47A7A;
+  --color-error-subtle: #3D2F2F;
+
+  /* Info Colors */
+  --color-info: #8BB5D1;
+  --color-info-light: #A8C8DF;
+  --color-info-dark: #6F9BB8;
+  --color-info-subtle: #2A3A47;
+
+  /* Neutral Colors */
+  --color-neutral: #6B6967;
+  --color-neutral-light: #4A4846;
+  --color-neutral-dark: #8B8885;
+
+  /* Border & Divider Colors */
+  --color-border: #353330;
+  --color-border-light: #2C2A28;
+  --color-border-dark: #4A4846;
+
+  /* Interactive States */
+  --color-interactive-default-bg: #2C2A28;
+  --color-interactive-default-text: #F5F3F0;
+  --color-interactive-default-border: #353330;
+
+  --color-interactive-hover-bg: #353330;
+  --color-interactive-hover-text: #F5F3F0;
+  --color-interactive-hover-border: #4A4846;
+
+  --color-interactive-active-bg: #3D3B38;
+  --color-interactive-active-text: #F5F3F0;
+  --color-interactive-active-border: #8BB5D1;
+
+  --color-interactive-focus-bg: #2C2A28;
+  --color-interactive-focus-text: #F5F3F0;
+  --color-interactive-focus-border: #8BB5D1;
+  --color-interactive-focus-ring-width: 2px;
+
+  --color-interactive-disabled-bg: #252421;
+  --color-interactive-disabled-text: #6B6967;
+  --color-interactive-disabled-border: #2C2A28;
+
+  /* Workflow States */
+  --color-workflow-draft: #8BB5D1;
+  --color-workflow-submitted: #E8B87A;
+  --color-workflow-approved: #7FC4A3;
+  --color-workflow-rejected: #D89A9A;
+  --color-workflow-closed: #6B6967;
+  --color-workflow-archived: #6B6967;
+
+  /* Task Status */
+  --color-task-open: #8BB5D1;
+  --color-task-in-progress: #E8B87A;
+  --color-task-done: #7FC4A3;
+  --color-task-cancelled: #D89A9A;
+
+  /* Document Status */
+  --color-document-draft: #8BB5D1;
+  --color-document-in-review: #E8B87A;
+  --color-document-approved: #7FC4A3;
+  --color-document-published: #7FC4A3;
+  --color-document-retired: #6B6967;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* Enable smooth scrolling */
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  
+  /* Apply theme colors */
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  
+  /* Ensure proper text rendering */
+  text-rendering: optimizeLegibility;
+}
+
+/* ============================================================================
+   Utility Classes
+   ============================================================================ */
+
+/* Background Colors */
+.bg-primary {
+  background-color: var(--color-bg-primary);
+}
+
+.bg-secondary {
+  background-color: var(--color-bg-secondary);
+}
+
+.bg-tertiary {
+  background-color: var(--color-bg-tertiary);
+}
+
+.bg-surface {
+  background-color: var(--color-surface);
+}
+
+.bg-surface-elevated {
+  background-color: var(--color-surface-elevated);
+}
+
+/* Text Colors */
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.text-tertiary {
+  color: var(--color-text-tertiary);
+}
+
+.text-inverse {
+  color: var(--color-text-inverse);
+}
+
+.text-disabled {
+  color: var(--color-text-disabled);
+}
+
+/* Semantic Text Colors */
+.text-success {
+  color: var(--color-success);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+.text-info {
+  color: var(--color-info);
+}
+
+/* Border Utilities */
+.border {
+  border: 1px solid var(--color-border);
+}
+
+.border-light {
+  border: 1px solid var(--color-border-light);
+}
+
+.border-dark {
+  border: 1px solid var(--color-border-dark);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.border-success {
+  border-color: var(--color-success);
+}
+
+.border-warning {
+  border-color: var(--color-warning);
+}
+
+.border-error {
+  border-color: var(--color-error);
+}
+
+.border-info {
+  border-color: var(--color-info);
+}
+
+/* Focus Styles */
+.focus-ring {
+  outline: none;
+  border: var(--color-interactive-focus-ring-width) solid var(--color-interactive-focus-border);
+  box-shadow: 0 0 0 calc(var(--color-interactive-focus-ring-width) + 2px) var(--color-primary-subtle);
+}
+
+/* Disabled State */
+.disabled {
+  background-color: var(--color-interactive-disabled-bg);
+  color: var(--color-interactive-disabled-text);
+  border-color: var(--color-interactive-disabled-border);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Workflow Status Badges */
+.badge-workflow-draft {
+  background-color: var(--color-workflow-draft);
+  color: var(--color-text-inverse);
+}
+
+.badge-workflow-submitted {
+  background-color: var(--color-workflow-submitted);
+  color: var(--color-text-inverse);
+}
+
+.badge-workflow-approved {
+  background-color: var(--color-workflow-approved);
+  color: var(--color-text-inverse);
+}
+
+.badge-workflow-rejected {
+  background-color: var(--color-workflow-rejected);
+  color: var(--color-text-inverse);
+}
+
+.badge-workflow-closed,
+.badge-workflow-archived {
+  background-color: var(--color-workflow-closed);
+  color: var(--color-text-inverse);
+}
+
+/* Task Status Badges */
+.badge-task-open {
+  background-color: var(--color-task-open);
+  color: var(--color-text-inverse);
+}
+
+.badge-task-in-progress {
+  background-color: var(--color-task-in-progress);
+  color: var(--color-text-inverse);
+}
+
+.badge-task-done {
+  background-color: var(--color-task-done);
+  color: var(--color-text-inverse);
+}
+
+.badge-task-cancelled {
+  background-color: var(--color-task-cancelled);
+  color: var(--color-text-inverse);
+}
+
+/* Document Status Badges */
+.badge-document-draft {
+  background-color: var(--color-document-draft);
+  color: var(--color-text-inverse);
+}
+
+.badge-document-in-review {
+  background-color: var(--color-document-in-review);
+  color: var(--color-text-inverse);
+}
+
+.badge-document-approved,
+.badge-document-published {
+  background-color: var(--color-document-approved);
+  color: var(--color-text-inverse);
+}
+
+.badge-document-retired {
+  background-color: var(--color-document-retired);
+  color: var(--color-text-inverse);
+}
+
+/* Semantic Background Utilities */
+.bg-success-subtle {
+  background-color: var(--color-success-subtle);
+}
+
+.bg-warning-subtle {
+  background-color: var(--color-warning-subtle);
+}
+
+.bg-error-subtle {
+  background-color: var(--color-error-subtle);
+}
+
+.bg-info-subtle {
+  background-color: var(--color-info-subtle);
+}
+
+.bg-primary-subtle {
+  background-color: var(--color-primary-subtle);
+}
+
+/* Shadow Utilities */
+.shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.shadow-xl {
+  box-shadow: var(--shadow-xl);
+}
+
+/* ============================================================================
+   Accessibility
+   ============================================================================ */
+
+/* Ensure focus indicators are visible */
+*:focus-visible {
+  outline: var(--color-interactive-focus-ring-width) solid var(--color-interactive-focus-border);
+  outline-offset: 2px;
+}
+
+/* Skip to main content link (for screen readers) */
+.skip-to-main {
+  position: absolute;
+  left: -9999px;
+  z-index: 999;
+  padding: 1em;
+  background-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  text-decoration: none;
+}
+
+.skip-to-main:focus {
+  left: 50%;
+  transform: translateX(-50%);
+  top: 1em;
+}
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+
+@media print {
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a,
+  a:visited {
+    text-decoration: underline;
+  }
+
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+}

@@ -1,36 +1,72 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
+# Dependencies
+node_modules/
+.pnp
 .pnp.js
 
-# testing
-/coverage
+# Testing
+coverage/
+*.lcov
 
-# next.js
-/.next/
-/out/
+# Production builds
+build/
+dist/
+out/
+.next/
 
-# production
-/build
+# Environment variables
+.env
+.env*.local
+.env.production
+.env.development
 
-# misc
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 .DS_Store
-*.pem
 
-# debug
+# Logs
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# local env files
-.env*.local
-.env
-
-# vercel
-.vercel
-
-# typescript
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Java / Maven
+backend/**/target/
+backend/**/.classpath
+backend/**/.project
+backend/**/.settings/
+backend/**/.factorypath
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+# Spring Boot
+application-local.yml
+application-local.properties
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.pem
+.vercel
