@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppShell } from './app-shell/AppShell';
-import { LandingPage } from './pages/LandingPage';
+import { DashboardPage } from './dashboard-ui/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -13,7 +13,7 @@ function App() {
           index
           element={
             <ProtectedRoute>
-              <LandingPage />
+              <DashboardPage />
             </ProtectedRoute>
           }
         />
