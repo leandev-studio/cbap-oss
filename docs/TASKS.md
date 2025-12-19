@@ -93,13 +93,13 @@ Tasks are organized to:
   - [x] Navigation service (load user's accessible navigation)
   - [x] API: `GET /api/v1/navigation` (role-aware)
 
-- ⬜ **Frontend: Navigation UI**
-  - [ ] Navigation sidebar/drawer component
-  - [ ] Navigation menu from metadata
-  - [ ] Active route highlighting
-  - [ ] Collapsible menu sections
-  - [ ] Mobile-responsive navigation
-  - [ ] User profile menu (logout, settings)
+- ✅ **Frontend: Navigation UI**
+  - [x] Navigation sidebar/drawer component
+  - [x] Navigation menu from metadata
+  - [x] Active route highlighting
+  - [x] Collapsible menu sections
+  - [x] Mobile-responsive navigation
+  - [x] User profile menu (logout, settings)
 
 ### 2.2 Dashboard Foundation
 - ⬜ **Backend: Dashboard Metadata**
