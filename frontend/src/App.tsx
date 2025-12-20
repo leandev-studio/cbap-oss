@@ -4,6 +4,7 @@ import { DashboardPage } from './dashboard-ui/DashboardPage';
 import { EntitiesOverviewPage } from './metadata-ui/EntitiesOverviewPage';
 import { EntityListPage } from './metadata-ui/EntityListPage';
 import { EntityDetailPage } from './metadata-ui/EntityDetailPage';
+import { EntityCreatePage } from './metadata-ui/EntityCreatePage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -33,6 +34,14 @@ function App() {
           element={
             <ProtectedRoute>
               <EntityListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="entities/:entityId/create"
+          element={
+            <ProtectedRoute>
+              <EntityCreatePage />
             </ProtectedRoute>
           }
         />

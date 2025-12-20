@@ -187,26 +187,26 @@ Tasks are organized to:
   - [x] API: `DELETE /api/v1/entities/{entityId}/records/{recordId}`
 
 ### 4.2 Frontend: Create/Edit Forms
-- ⬜ **Metadata-Driven Form Component**
-  - [ ] Entity form component (create/edit)
-  - [ ] Generate form fields from property definitions
-  - [ ] Field types: text, number, date, boolean, select, multi-select
-  - [ ] Reference field (entity picker)
-  - [ ] Required field validation (client-side)
-  - [ ] Form validation display
-  - [ ] Submit handler
-  - [ ] Success/error feedback
-  - [ ] Redirect after create
+- ✅ **Metadata-Driven Form Component**
+  - [x] Entity form component (create/edit)
+  - [x] Generate form fields from property definitions
+  - [x] Field types: text, number, date, boolean, select, multi-select
+  - [x] Reference field (entity picker)
+  - [x] Required field validation (client-side)
+  - [x] Form validation display
+  - [x] Submit handler
+  - [x] Success/error feedback
+  - [x] Redirect after create
 
-- ⬜ **Form Field Components**
-  - [ ] Text input component
-  - [ ] Number input component
-  - [ ] Date picker component
-  - [ ] Boolean (checkbox/switch) component
-  - [ ] Single select dropdown
-  - [ ] Multi-select component
-  - [ ] Reference picker component
-  - [ ] Calculated field display (read-only)
+- ✅ **Form Field Components**
+  - [x] Text input component
+  - [x] Number input component
+  - [x] Date picker component
+  - [x] Boolean (checkbox/switch) component
+  - [x] Single select dropdown
+  - [x] Multi-select component
+  - [x] Reference picker component
+  - [x] Calculated field display (read-only)
 
 **Phase 4 Deliverable**: Users can create and edit entity records
 

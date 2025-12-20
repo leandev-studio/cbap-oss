@@ -6,8 +6,8 @@ import { useNavigate } from 'react-router-dom';
 interface EntityDetailFieldProps {
   property: PropertyDefinition;
   value: any;
-  record: EntityRecord;
-  entityDefinition: EntityDefinition;
+  record?: EntityRecord;
+  entityDefinition?: EntityDefinition;
 }
 
 /**
@@ -19,8 +19,6 @@ interface EntityDetailFieldProps {
 export function EntityDetailField({
   property,
   value,
-  record,
-  entityDefinition,
 }: EntityDetailFieldProps) {
   const navigate = useNavigate();
 
