@@ -45,7 +45,14 @@ apiClient.interceptors.request.use(
     // Add auth token if available (check both localStorage and sessionStorage)
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+      // Ensure token is trimmed and not empty
+      const trimmedToken = token.trim();
+      if (trimmedToken) {
+        config.headers.Authorization = `Bearer ${trimmedToken}`;
+      }
+    } else if (config.url && !config.url.includes('/auth/login') && !config.url.includes('/auth/refresh')) {
+      // Log warning for missing token on protected endpoints (for debugging)
+      console.warn('API call without auth token:', config.url);
     }
 
     // Add correlation ID for request tracing

@@ -33,6 +33,11 @@
             <artifactId>cbap-security</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.cbap</groupId>
+            <artifactId>cbap-search</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         
         <!-- Spring Web -->
         <dependency>

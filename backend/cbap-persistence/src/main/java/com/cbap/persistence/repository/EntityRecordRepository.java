@@ -43,4 +43,11 @@ public interface EntityRecordRepository extends JpaRepository<EntityRecord, UUID
      */
     @Query("SELECT COUNT(r) FROM EntityRecord r WHERE r.entity.entityId = :entityId AND r.deletedAt IS NULL")
     long countByEntityId(@Param("entityId") String entityId);
+
+    /**
+     * Find all records for an entity (including deleted, for reindexing).
+     */
+    @Query("SELECT r FROM EntityRecord r WHERE r.entity.entityId = :entityId ORDER BY r.createdAt DESC")
+    List<EntityRecord> findAllByEntityId(@Param("entityId") String entityId);
+
 }

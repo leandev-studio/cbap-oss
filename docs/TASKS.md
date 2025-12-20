@@ -216,38 +216,38 @@ Tasks are organized to:
 *Goal: Users can search and filter entities*
 
 ### 5.1 Backend: Search Infrastructure
-- ⬜ **Search Indexing**
-  - [ ] OpenSearch client setup
-  - [ ] Index creation service
-  - [ ] Document indexing on entity create/update
-  - [ ] Denormalization service (extract indexed fields)
-  - [ ] Search query service
-  - [ ] API: `GET /api/v1/search?q={query}&entity={entityId}`
+- ✅ **Search Indexing**
+  - [x] OpenSearch client setup
+  - [x] Index creation service
+  - [x] Document indexing on entity create/update
+  - [x] Denormalization service (extract indexed fields)
+  - [x] Search query service
+  - [x] API: `GET /api/v1/search?q={query}&entity={entityId}`
 
-- ⬜ **Advanced Filtering**
-  - [ ] Filter builder service
-  - [ ] Filter by property values
-  - [ ] Save search definitions
-  - [ ] API: `POST /api/v1/entities/{entityId}/records/search`
-  - [ ] API: `POST /api/v1/searches` (save search)
-  - [ ] API: `GET /api/v1/searches` (user's saved searches)
+- ✅ **Advanced Filtering**
+  - [x] Filter builder service
+  - [x] Filter by property values
+  - [x] Save search definitions
+  - [x] API: `POST /api/v1/entities/{entityId}/records/search`
+  - [x] API: `POST /api/v1/searches` (save search)
+  - [x] API: `GET /api/v1/searches` (user's saved searches)
 
 ### 5.2 Frontend: Search UI
-- ⬜ **Global Search**
-  - [ ] Global search bar component (header)
-  - [ ] Search results page
-  - [ ] Cross-entity search results
-  - [ ] Result grouping by entity type
-  - [ ] Link to entity detail from results
+- ✅ **Global Search**
+  - [x] Global search bar component (header)
+  - [x] Search results page
+  - [x] Cross-entity search results
+  - [x] Result grouping by entity type
+  - [x] Link to entity detail from results
 
-- ⬜ **Entity List Filtering**
-  - [ ] Filter panel component
-  - [ ] Filter by property values
-  - [ ] Date range filters
-  - [ ] Reference filters
-  - [ ] Apply/clear filters
-  - [ ] Save filter as search
-  - [ ] Load saved searches
+- ✅ **Entity List Filtering**
+  - [x] Filter panel component
+  - [x] Filter by property values
+  - [x] Date range filters
+  - [x] Reference filters
+  - [x] Apply/clear filters
+  - [x] Save filter as search
+  - [x] Load saved searches
 
 **Phase 5 Deliverable**: Users can search across entities and filter lists
 

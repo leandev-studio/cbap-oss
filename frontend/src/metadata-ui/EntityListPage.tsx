@@ -14,8 +14,9 @@ import {
 import { Search, Clear, Add } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { getEntityById } from '../shared/services/entityMetadataService';
-import { getRecords } from '../shared/services/entityRecordService';
+import { getRecords, getRecordsWithFilters } from '../shared/services/entityRecordService';
 import { EntityListTable } from './EntityListTable';
+import { FilterPanel } from './FilterPanel';
 
 /**
  * Entity List Page Component
@@ -29,6 +30,8 @@ export function EntityListPage() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [searchText, setSearchText] = useState('');
+  const [filters, setFilters] = useState<Record<string, any>>({});
+  const [appliedFilters, setAppliedFilters] = useState<Record<string, any>>({});
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -51,7 +54,22 @@ export function EntityListPage() {
     enabled: !!entityId,
   });
 
-  // Fetch records
+  // Fetch records using database filter API when filters or grid search are applied
+  // This uses PostgreSQL JSONB queries, not OpenSearch
+  const {
+    data: filteredRecordsData,
+    isLoading: isLoadingFiltered,
+    error: filteredError,
+  } = useQuery({
+    queryKey: ['entity-records-filtered', entityId, searchText, appliedFilters, page, pageSize],
+    queryFn: () => getRecordsWithFilters(entityId!, {
+      filters: appliedFilters,
+      searchText: searchText || undefined,
+    }, page, pageSize),
+    enabled: !!entityId && (Object.keys(appliedFilters).length > 0 || searchText.length > 0),
+  });
+
+  // Fetch records using regular API when no filters or search
   const {
     data: recordsData,
     isLoading: isLoadingRecords,
@@ -59,32 +77,39 @@ export function EntityListPage() {
   } = useQuery({
     queryKey: ['entity-records', entityId, page, pageSize],
     queryFn: () => getRecords(entityId, page, pageSize),
-    enabled: !!entityId,
+    enabled: !!entityId && Object.keys(appliedFilters).length === 0 && searchText.length === 0,
   });
 
-  // Filter records by search text (client-side for now)
-  const filteredRecords = useMemo(() => {
-    if (!recordsData?.records || !searchText) {
+  // Determine which records to use
+  const records = useMemo(() => {
+    if (Object.keys(appliedFilters).length > 0 || searchText.length > 0) {
+      // Use filtered records from database
+      return filteredRecordsData?.records || [];
+    } else {
+      // Use regular records
       return recordsData?.records || [];
     }
+  }, [appliedFilters, searchText, filteredRecordsData, recordsData]);
 
-    const lowerSearch = searchText.toLowerCase();
-    return recordsData.records.filter((record) => {
-      // Search across all string/number fields in the data
-      return Object.values(record.data).some((value) => {
-        if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(lowerSearch);
-      });
-    });
-  }, [recordsData?.records, searchText]);
+  const totalRecords = Object.keys(appliedFilters).length > 0 || searchText.length > 0
+    ? filteredRecordsData?.totalElements || 0
+    : recordsData?.totalElements || 0;
+
+  const isLoadingRecordsData = Object.keys(appliedFilters).length > 0 || searchText.length > 0
+    ? isLoadingFiltered
+    : isLoadingRecords;
+
+  const recordsErrorData = Object.keys(appliedFilters).length > 0 || searchText.length > 0
+    ? filteredError
+    : recordsError;
 
   // Sort records (client-side for now)
   const sortedRecords = useMemo(() => {
-    if (!sortField || filteredRecords.length === 0) {
-      return filteredRecords;
+    if (!sortField || records.length === 0) {
+      return records;
     }
 
-    return [...filteredRecords].sort((a, b) => {
+    return [...records].sort((a, b) => {
       const aValue = a.data[sortField];
       const bValue = b.data[sortField];
 
@@ -100,7 +125,24 @@ export function EntityListPage() {
 
       return sortDirection === 'asc' ? comparison : -comparison;
     });
-  }, [filteredRecords, sortField, sortDirection]);
+  }, [records, sortField, sortDirection]);
+
+  const handleApplyFilters = () => {
+    setAppliedFilters(filters);
+    setPage(0); // Reset to first page
+  };
+
+  const handleClearFilters = () => {
+    setFilters({});
+    setAppliedFilters({});
+    setSearchText('');
+    setPage(0);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchText(value);
+    setPage(0);
+  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -165,7 +207,18 @@ export function EntityListPage() {
         </Button>
       </Box>
 
-      {/* Search and Filters */}
+      {/* Filter Panel */}
+      {entityDefinition && (
+        <FilterPanel
+          entityDefinition={entityDefinition}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onApplyFilters={handleApplyFilters}
+          onClearFilters={handleClearFilters}
+        />
+      )}
+
+      {/* Search */}
       <Paper
         elevation={0}
         sx={{
@@ -181,7 +234,7 @@ export function EntityListPage() {
           fullWidth
           placeholder="Search records..."
           value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -190,7 +243,7 @@ export function EntityListPage() {
             ),
             endAdornment: searchText && (
               <InputAdornment position="end">
-                <IconButton size="small" onClick={() => setSearchText('')}>
+                <IconButton size="small" onClick={() => handleSearchChange('')}>
                   <Clear />
                 </IconButton>
               </InputAdornment>
@@ -201,19 +254,19 @@ export function EntityListPage() {
       </Paper>
 
       {/* Records Table */}
-      {isLoadingRecords ? (
+      {isLoadingRecordsData ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
           <CircularProgress />
         </Box>
-      ) : recordsError ? (
+      ) : recordsErrorData ? (
         <Alert severity="error">
-          Failed to load records: {recordsError instanceof Error ? recordsError.message : 'Unknown error'}
+          Failed to load records: {recordsErrorData instanceof Error ? recordsErrorData.message : 'Unknown error'}
         </Alert>
       ) : (
         <EntityListTable
           entityDefinition={entityDefinition}
           records={sortedRecords}
-          totalRecords={recordsData?.totalElements || 0}
+          totalRecords={totalRecords}
           page={page}
           pageSize={pageSize}
           onPageChange={setPage}

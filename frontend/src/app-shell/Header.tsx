@@ -4,6 +4,7 @@ import { toggleTheme, getInitialTheme } from '../shared/utils/theme';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../shared/context/AuthContext';
 import { useMediaQuery, useTheme } from '@mui/material';
+import { GlobalSearchBar } from './GlobalSearchBar';
 
 /**
  * Application Header Component
@@ -105,15 +106,20 @@ export function Header({ onMenuClick }: HeaderProps) {
             variant="h6" 
             component="div" 
             sx={{ 
-              flexGrow: 1,
               fontWeight: 600,
               color: 'text.primary',
+              mr: 2,
             }}
           >
             CBAP
           </Typography>
+
+          <Box sx={{ flexGrow: 1 }} />
           
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Global Search Bar - moved to right side */}
+          <GlobalSearchBar />
+
           <IconButton
             onClick={handleThemeToggle}
             color="inherit"

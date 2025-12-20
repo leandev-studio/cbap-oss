@@ -27,9 +27,12 @@ public interface EntityDefinitionRepository extends JpaRepository<EntityDefiniti
     List<EntityDefinition> findAllWithProperties();
 
     /**
-     * Find entity by ID with properties loaded.
+     * Find entity by ID with properties loaded (including reference entities for properties).
      */
-    @Query("SELECT DISTINCT e FROM EntityDefinition e LEFT JOIN FETCH e.properties WHERE e.entityId = :entityId")
+    @Query("SELECT DISTINCT e FROM EntityDefinition e " +
+           "LEFT JOIN FETCH e.properties p " +
+           "LEFT JOIN FETCH p.referenceEntity " +
+           "WHERE e.entityId = :entityId")
     Optional<EntityDefinition> findByEntityIdWithProperties(@Param("entityId") String entityId);
 
     /**
