@@ -1,7 +1,9 @@
 package com.cbap.api.controller;
 
 import com.cbap.api.service.EntityRecordService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -74,6 +76,105 @@ public class EntityRecordController {
         response.put("updatedAt", record.getUpdatedAt());
         response.put("createdBy", record.getCreatedBy());
         response.put("updatedBy", record.getUpdatedBy());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Create a new entity record.
+     * POST /api/v1/entities/{entityId}/records
+     */
+    @PostMapping("/{entityId}/records")
+    public ResponseEntity<Map<String, Object>> createRecord(
+            @PathVariable String entityId,
+            @Valid @RequestBody EntityRecordService.CreateRecordRequest request,
+            Authentication authentication) {
+        
+        // Verify authentication is present
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+        
+        // TODO: Add authorization check - verify user has permission to create records for this entity
+        // For now, just require authentication
+        
+        EntityRecordService.EntityRecordDTO record = entityRecordService.createRecord(entityId, request, authentication);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("recordId", record.getRecordId());
+        response.put("entityId", record.getEntityId());
+        response.put("data", record.getData());
+        response.put("schemaVersion", record.getSchemaVersion());
+        response.put("state", record.getState());
+        response.put("createdAt", record.getCreatedAt());
+        response.put("updatedAt", record.getUpdatedAt());
+        response.put("createdBy", record.getCreatedBy());
+        response.put("updatedBy", record.getUpdatedBy());
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Update an existing entity record.
+     * PUT /api/v1/entities/{entityId}/records/{recordId}
+     */
+    @PutMapping("/{entityId}/records/{recordId}")
+    public ResponseEntity<Map<String, Object>> updateRecord(
+            @PathVariable String entityId,
+            @PathVariable UUID recordId,
+            @Valid @RequestBody EntityRecordService.UpdateRecordRequest request,
+            Authentication authentication) {
+        
+        // Verify authentication is present
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+        
+        // TODO: Add authorization check - verify user has permission to update records for this entity
+        // For now, just require authentication
+        
+        EntityRecordService.EntityRecordDTO record = entityRecordService.updateRecord(entityId, recordId, request, authentication);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("recordId", record.getRecordId());
+        response.put("entityId", record.getEntityId());
+        response.put("data", record.getData());
+        response.put("schemaVersion", record.getSchemaVersion());
+        response.put("state", record.getState());
+        response.put("createdAt", record.getCreatedAt());
+        response.put("updatedAt", record.getUpdatedAt());
+        response.put("createdBy", record.getCreatedBy());
+        response.put("updatedBy", record.getUpdatedBy());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Soft delete an entity record.
+     * DELETE /api/v1/entities/{entityId}/records/{recordId}
+     */
+    @DeleteMapping("/{entityId}/records/{recordId}")
+    public ResponseEntity<Map<String, String>> deleteRecord(
+            @PathVariable String entityId,
+            @PathVariable UUID recordId,
+            Authentication authentication) {
+        
+        // Verify authentication is present
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+        
+        // TODO: Add authorization check - verify user has permission to delete records for this entity
+        // For now, just require authentication
+        
+        entityRecordService.deleteRecord(entityId, recordId, authentication);
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Record deleted successfully");
+        response.put("recordId", recordId.toString());
         
         return ResponseEntity.ok(response);
     }

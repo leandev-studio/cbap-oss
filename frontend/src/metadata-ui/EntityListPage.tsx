@@ -9,8 +9,9 @@ import {
   TextField,
   InputAdornment,
   IconButton,
+  Button,
 } from '@mui/material';
-import { Search, Clear } from '@mui/icons-material';
+import { Search, Clear, Add } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { getEntityById } from '../shared/services/entityMetadataService';
 import { getRecords } from '../shared/services/entityRecordService';
@@ -143,15 +144,25 @@ export function EntityListPage() {
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom color="text.primary">
-          {entityDefinition.name}
-        </Typography>
-        {entityDefinition.description && (
-          <Typography variant="body2" color="text.secondary">
-            {entityDefinition.description}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box>
+          <Typography variant="h4" component="h1" gutterBottom color="text.primary">
+            {entityDefinition.name}
           </Typography>
-        )}
+          {entityDefinition.description && (
+            <Typography variant="body2" color="text.secondary">
+              {entityDefinition.description}
+            </Typography>
+          )}
+        </Box>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => navigate(`/entities/${entityId}/create`)}
+          sx={{ ml: 2 }}
+        >
+          Create New
+        </Button>
       </Box>
 
       {/* Search and Filters */}

@@ -65,11 +65,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                } else {
+                    // Token is invalid - log and continue (will result in 401 from SecurityConfig)
+                    logger.warn("Invalid JWT token for user: " + username);
                 }
             }
         } catch (Exception e) {
             // Log error but continue filter chain
-            logger.error("Cannot set user authentication", e);
+            // The SecurityConfig will handle unauthorized requests and return 401
+            logger.error("Error processing JWT token: " + e.getMessage(), e);
         }
 
         filterChain.doFilter(request, response);
