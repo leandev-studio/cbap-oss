@@ -29,6 +29,7 @@ public class WorkflowRuntimeService {
     private final WorkflowTransitionRepository workflowTransitionRepository;
     private final WorkflowAuditLogRepository workflowAuditLogRepository;
     private final UserRepository userRepository;
+    private final com.cbap.persistence.repository.TaskRepository taskRepository;
 
     public WorkflowRuntimeService(
             EntityDefinitionRepository entityDefinitionRepository,
@@ -36,13 +37,15 @@ public class WorkflowRuntimeService {
             WorkflowDefinitionRepository workflowDefinitionRepository,
             WorkflowTransitionRepository workflowTransitionRepository,
             WorkflowAuditLogRepository workflowAuditLogRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            com.cbap.persistence.repository.TaskRepository taskRepository) {
         this.entityDefinitionRepository = entityDefinitionRepository;
         this.entityRecordRepository = entityRecordRepository;
         this.workflowDefinitionRepository = workflowDefinitionRepository;
         this.workflowTransitionRepository = workflowTransitionRepository;
         this.workflowAuditLogRepository = workflowAuditLogRepository;
         this.userRepository = userRepository;
+        this.taskRepository = taskRepository;
     }
 
     /**
@@ -154,6 +157,27 @@ public class WorkflowRuntimeService {
 
         logger.info("Workflow transition executed: entityId={}, recordId={}, fromState={}, toState={}, transitionId={}, userId={}",
                 entityId, recordId, previousState, transition.getToState(), transitionId, user.getUserId());
+
+        // Create tasks if transition metadata specifies task creation
+        if (transition.getMetadataJson() != null) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> tasksConfig = (Map<String, Object>) transition.getMetadataJson().get("createTasks");
+            if (tasksConfig != null) {
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> tasks = (List<Map<String, Object>>) tasksConfig.get("tasks");
+                if (tasks != null) {
+                    for (Map<String, Object> taskConfig : tasks) {
+                        try {
+                            createTaskFromTransition(entityId, recordId, transition, taskConfig, user);
+                        } catch (Exception e) {
+                            logger.warn("Failed to create task from transition: transitionId={}, error={}",
+                                    transitionId, e.getMessage());
+                            // Don't fail the transition if task creation fails
+                        }
+                    }
+                }
+            }
+        }
 
         // Return result
         TransitionResult result = new TransitionResult();
@@ -371,5 +395,81 @@ public class WorkflowRuntimeService {
         public void setComments(String comments) { this.comments = comments; }
         public java.util.Map<String, Object> getMetadataJson() { return metadataJson; }
         public void setMetadataJson(java.util.Map<String, Object> metadataJson) { this.metadataJson = metadataJson; }
+    }
+
+    /**
+     * Create a task from workflow transition metadata.
+     * 
+     * Task config format (in transition.metadata_json.createTasks.tasks[]):
+     * {
+     *   "assigneeId": "user-uuid",
+     *   "title": "Task title",
+     *   "description": "Task description",
+     *   "priority": "HIGH",
+     *   "dueDate": "2025-12-31T23:59:59Z"
+     * }
+     */
+    private void createTaskFromTransition(
+            String entityId,
+            UUID recordId,
+            WorkflowTransition transition,
+            Map<String, Object> taskConfig,
+            User createdBy) {
+        
+        try {
+            // Extract task configuration
+            UUID assigneeId;
+            if (taskConfig.get("assigneeId") != null) {
+                assigneeId = UUID.fromString(taskConfig.get("assigneeId").toString());
+            } else {
+                logger.warn("Task config missing assigneeId, skipping task creation");
+                return;
+            }
+            
+            String title = taskConfig.getOrDefault("title", transition.getActionLabel()).toString();
+            String description = taskConfig.get("description") != null 
+                    ? taskConfig.get("description").toString() 
+                    : null;
+            
+            com.cbap.persistence.entity.Task.TaskPriority priority = null;
+            if (taskConfig.get("priority") != null) {
+                try {
+                    priority = com.cbap.persistence.entity.Task.TaskPriority.valueOf(
+                            taskConfig.get("priority").toString().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid priority value: {}", taskConfig.get("priority"));
+                }
+            }
+            
+            OffsetDateTime dueDate = null;
+            if (taskConfig.get("dueDate") != null) {
+                dueDate = OffsetDateTime.parse(taskConfig.get("dueDate").toString());
+            }
+            
+            // Create task directly
+            com.cbap.persistence.entity.Task task = new com.cbap.persistence.entity.Task();
+            task.setEntity(entityDefinitionRepository.findById(entityId)
+                    .orElseThrow(() -> new IllegalArgumentException("Entity not found: " + entityId)));
+            task.setRecord(entityRecordRepository.findByEntityIdAndRecordId(entityId, recordId)
+                    .orElseThrow(() -> new IllegalArgumentException("Record not found: " + recordId)));
+            task.setTitle(title);
+            task.setDescription(description);
+            task.setAssignee(userRepository.findById(assigneeId)
+                    .orElseThrow(() -> new IllegalArgumentException("Assignee not found: " + assigneeId)));
+            task.setStatus(com.cbap.persistence.entity.Task.TaskStatus.OPEN);
+            task.setPriority(priority);
+            task.setDueDate(dueDate);
+            task.setWorkflowState(transition.getToState());
+            task.setTransition(transition);
+            task.setCreatedBy(createdBy);
+            
+            taskRepository.save(task);
+            
+            logger.info("Task created from transition: taskId={}, entityId={}, recordId={}, assigneeId={}, title={}",
+                    task.getTaskId(), entityId, recordId, assigneeId, title);
+        } catch (Exception e) {
+            logger.error("Error creating task from transition: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 }

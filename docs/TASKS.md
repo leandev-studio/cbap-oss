@@ -277,15 +277,15 @@ Tasks are organized to:
   - [x] API: `GET /api/v1/entities/{entityId}/records/{recordId}/workflow-audit` (audit log)
 
 ### 6.2 Backend: Task System
-- ⬜ **Task Management**
-  - [ ] Task model (taskId, entityId, recordId, assignee, status, dueDate)
-  - [ ] Task repository
-  - [ ] Task service (create, update, complete)
-  - [ ] Task assignment on workflow transitions
-  - [ ] API: `GET /api/v1/tasks` (user's tasks)
-  - [ ] API: `GET /api/v1/tasks/{taskId}`
-  - [ ] API: `POST /api/v1/tasks/{taskId}/complete`
-  - [ ] API: `POST /api/v1/tasks/{taskId}/decisions` (approve/reject/request-changes)
+- ✅ **Task Management**
+  - [x] Task model (taskId, entityId, recordId, assignee, status, dueDate)
+  - [x] Task repository
+  - [x] Task service (create, update, complete)
+  - [x] Task assignment on workflow transitions (via transition metadata)
+  - [x] API: `GET /api/v1/tasks` (user's tasks)
+  - [x] API: `GET /api/v1/tasks/{taskId}`
+  - [x] API: `POST /api/v1/tasks/{taskId}/complete`
+  - [x] API: `POST /api/v1/tasks/{taskId}/decisions` (approve/reject/request-changes)
 
 ### 6.3 Frontend: Workflow UI
 - ⬜ **Workflow Action Bar**
