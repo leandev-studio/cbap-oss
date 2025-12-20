@@ -175,16 +175,16 @@ Tasks are organized to:
 *Goal: Users can create and edit entity records*
 
 ### 4.1 Backend: Entity CRUD
-- ⬜ **Entity Record Operations**
-  - [ ] Create entity record service
-  - [ ] Update entity record service
-  - [ ] Soft delete entity record service
-  - [ ] Validation service integration
-  - [ ] Authorization checks
-  - [ ] Audit logging for create/update/delete
-  - [ ] API: `POST /api/v1/entities/{entityId}/records`
-  - [ ] API: `PUT /api/v1/entities/{entityId}/records/{recordId}`
-  - [ ] API: `DELETE /api/v1/entities/{entityId}/records/{recordId}`
+- ✅ **Entity Record Operations**
+  - [x] Create entity record service
+  - [x] Update entity record service
+  - [x] Soft delete entity record service
+  - [x] Validation service integration
+  - [x] Authorization checks
+  - [x] Audit logging for create/update/delete
+  - [x] API: `POST /api/v1/entities/{entityId}/records`
+  - [x] API: `PUT /api/v1/entities/{entityId}/records/{recordId}`
+  - [x] API: `DELETE /api/v1/entities/{entityId}/records/{recordId}`
 
 ### 4.2 Frontend: Create/Edit Forms
 - ⬜ **Metadata-Driven Form Component**

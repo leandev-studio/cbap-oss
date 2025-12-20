@@ -2,10 +2,13 @@ package com.cbap.api.service;
 
 import com.cbap.persistence.entity.EntityDefinition;
 import com.cbap.persistence.entity.EntityRecord;
+import com.cbap.persistence.entity.PropertyDefinition;
 import com.cbap.persistence.entity.User;
 import com.cbap.persistence.repository.EntityDefinitionRepository;
 import com.cbap.persistence.repository.EntityRecordRepository;
 import com.cbap.persistence.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -14,13 +17,16 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.UUID;
+import java.time.OffsetDateTime;
+import java.util.*;
 
 /**
  * Service for entity record operations.
  */
 @Service
 public class EntityRecordService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EntityRecordService.class);
 
     private final EntityRecordRepository entityRecordRepository;
     private final EntityDefinitionRepository entityDefinitionRepository;
@@ -63,6 +69,210 @@ public class EntityRecordService {
                 .orElseThrow(() -> new IllegalArgumentException("Record not found: " + recordId));
 
         return buildRecordDTO(record);
+    }
+
+    /**
+     * Create a new entity record.
+     */
+    @Transactional
+    public EntityRecordDTO createRecord(String entityId, CreateRecordRequest request, Authentication authentication) {
+        // Get entity definition with properties
+        EntityDefinition entity = entityDefinitionRepository.findByEntityIdWithProperties(entityId)
+                .orElseThrow(() -> new IllegalArgumentException("Entity not found: " + entityId));
+
+        // Get current user
+        User user = getCurrentUser(authentication);
+
+        // TODO: Authorization check - verify user has ENTITY_CREATE permission for this entity
+        // For now, just require authentication
+
+        // Validate data against entity definition
+        validateRecordData(entity, request.getData(), true);
+
+        // Create record
+        EntityRecord record = new EntityRecord();
+        record.setEntity(entity);
+        record.setDataJson(request.getData());
+        record.setSchemaVersion(entity.getSchemaVersion());
+        record.setState(request.getState());
+        record.setCreatedBy(user);
+        record.setUpdatedBy(user);
+
+        record = entityRecordRepository.save(record);
+
+        // Audit log
+        logger.info("Entity record created: entityId={}, recordId={}, userId={}", 
+                entityId, record.getRecordId(), user.getUserId());
+
+        return buildRecordDTO(record);
+    }
+
+    /**
+     * Update an existing entity record.
+     */
+    @Transactional
+    public EntityRecordDTO updateRecord(String entityId, UUID recordId, UpdateRecordRequest request, Authentication authentication) {
+        // Get entity definition with properties
+        EntityDefinition entity = entityDefinitionRepository.findByEntityIdWithProperties(entityId)
+                .orElseThrow(() -> new IllegalArgumentException("Entity not found: " + entityId));
+
+        // Get record
+        EntityRecord record = entityRecordRepository.findByEntityIdAndRecordId(entityId, recordId)
+                .orElseThrow(() -> new IllegalArgumentException("Record not found: " + recordId));
+
+        // Get current user
+        User user = getCurrentUser(authentication);
+
+        // TODO: Authorization check - verify user has ENTITY_UPDATE permission for this entity
+        // For now, just require authentication
+
+        // Validate data against entity definition
+        validateRecordData(entity, request.getData(), false);
+
+        // Update record
+        record.setDataJson(request.getData());
+        if (request.getState() != null) {
+            record.setState(request.getState());
+        }
+        record.setUpdatedBy(user);
+
+        record = entityRecordRepository.save(record);
+
+        // Audit log
+        logger.info("Entity record updated: entityId={}, recordId={}, userId={}", 
+                entityId, recordId, user.getUserId());
+
+        return buildRecordDTO(record);
+    }
+
+    /**
+     * Soft delete an entity record.
+     */
+    @Transactional
+    public void deleteRecord(String entityId, UUID recordId, Authentication authentication) {
+        // Get record
+        EntityRecord record = entityRecordRepository.findByEntityIdAndRecordId(entityId, recordId)
+                .orElseThrow(() -> new IllegalArgumentException("Record not found: " + recordId));
+
+        // Get current user
+        User user = getCurrentUser(authentication);
+
+        // TODO: Authorization check - verify user has ENTITY_DELETE permission for this entity
+        // For now, just require authentication
+
+        // Soft delete
+        record.setDeletedAt(OffsetDateTime.now());
+        record.setUpdatedBy(user);
+
+        entityRecordRepository.save(record);
+
+        // Audit log
+        logger.info("Entity record deleted: entityId={}, recordId={}, userId={}", 
+                entityId, recordId, user.getUserId());
+    }
+
+    /**
+     * Validate record data against entity definition.
+     */
+    private void validateRecordData(EntityDefinition entity, Map<String, Object> data, boolean isCreate) {
+        if (data == null) {
+            throw new IllegalArgumentException("Record data cannot be null");
+        }
+
+        List<String> errors = new ArrayList<>();
+
+        // Validate each property
+        for (PropertyDefinition property : entity.getProperties()) {
+            String propertyName = property.getPropertyName();
+            Object value = data.get(propertyName);
+
+            // Check required fields
+            if (property.getRequired() && (value == null || (value instanceof String && ((String) value).trim().isEmpty()))) {
+                errors.add("Required field '" + (property.getLabel() != null ? property.getLabel() : propertyName) + "' is missing");
+                continue;
+            }
+
+            // Skip validation if value is null and field is not required
+            if (value == null) {
+                continue;
+            }
+
+            // Type validation
+            validatePropertyType(property, value, errors);
+        }
+
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException("Validation failed: " + String.join("; ", errors));
+        }
+    }
+
+    /**
+     * Validate property type.
+     */
+    private void validatePropertyType(PropertyDefinition property, Object value, List<String> errors) {
+        String propertyName = property.getPropertyName();
+        String propertyType = property.getPropertyType();
+
+        try {
+            switch (propertyType) {
+                case "string":
+                    if (!(value instanceof String)) {
+                        errors.add("Field '" + propertyName + "' must be a string");
+                    }
+                    break;
+                case "number":
+                    if (!(value instanceof Number)) {
+                        errors.add("Field '" + propertyName + "' must be a number");
+                    }
+                    break;
+                case "date":
+                    // Accept string dates or timestamps
+                    if (!(value instanceof String) && !(value instanceof Number)) {
+                        errors.add("Field '" + propertyName + "' must be a date");
+                    }
+                    break;
+                case "boolean":
+                    if (!(value instanceof Boolean)) {
+                        errors.add("Field '" + propertyName + "' must be a boolean");
+                    }
+                    break;
+                case "singleSelect":
+                    // Accept string or number
+                    if (!(value instanceof String) && !(value instanceof Number)) {
+                        errors.add("Field '" + propertyName + "' must be a single select value");
+                    }
+                    break;
+                case "multiSelect":
+                    if (!(value instanceof List)) {
+                        errors.add("Field '" + propertyName + "' must be an array");
+                    }
+                    break;
+                case "reference":
+                    // Accept string (UUID) or object with id
+                    if (!(value instanceof String) && !(value instanceof Map)) {
+                        errors.add("Field '" + propertyName + "' must be a reference");
+                    }
+                    break;
+                case "calculated":
+                    // Calculated fields are read-only, should not be in create/update data
+                    errors.add("Field '" + propertyName + "' is calculated and cannot be set");
+                    break;
+            }
+        } catch (Exception e) {
+            errors.add("Error validating field '" + propertyName + "': " + e.getMessage());
+        }
+    }
+
+    /**
+     * Get current user from authentication.
+     */
+    private User getCurrentUser(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
+            throw new RuntimeException("User not authenticated");
+        }
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        return userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     /**
@@ -118,5 +328,26 @@ public class EntityRecordService {
         public java.time.OffsetDateTime getUpdatedAt() { return updatedAt; }
         public String getCreatedBy() { return createdBy; }
         public String getUpdatedBy() { return updatedBy; }
+    }
+
+    // Request DTOs
+    public static class CreateRecordRequest {
+        private Map<String, Object> data;
+        private String state;
+
+        public Map<String, Object> getData() { return data; }
+        public void setData(Map<String, Object> data) { this.data = data; }
+        public String getState() { return state; }
+        public void setState(String state) { this.state = state; }
+    }
+
+    public static class UpdateRecordRequest {
+        private Map<String, Object> data;
+        private String state;
+
+        public Map<String, Object> getData() { return data; }
+        public void setData(Map<String, Object> data) { this.data = data; }
+        public String getState() { return state; }
+        public void setState(String state) { this.state = state; }
     }
 }
