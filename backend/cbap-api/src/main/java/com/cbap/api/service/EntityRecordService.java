@@ -31,14 +31,17 @@ public class EntityRecordService {
     private final EntityRecordRepository entityRecordRepository;
     private final EntityDefinitionRepository entityDefinitionRepository;
     private final UserRepository userRepository;
+    private final com.cbap.search.service.SearchIndexingService searchIndexingService;
 
     public EntityRecordService(
             EntityRecordRepository entityRecordRepository,
             EntityDefinitionRepository entityDefinitionRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            com.cbap.search.service.SearchIndexingService searchIndexingService) {
         this.entityRecordRepository = entityRecordRepository;
         this.entityDefinitionRepository = entityDefinitionRepository;
         this.userRepository = userRepository;
+        this.searchIndexingService = searchIndexingService;
     }
 
     /**
@@ -100,6 +103,15 @@ public class EntityRecordService {
 
         record = entityRecordRepository.save(record);
 
+        // Index in OpenSearch (async, non-blocking)
+        try {
+            searchIndexingService.indexRecord(entity, record);
+        } catch (Exception e) {
+            logger.warn("Failed to index record in search: entityId={}, recordId={}", 
+                    entityId, record.getRecordId(), e);
+            // Don't fail the operation if indexing fails
+        }
+
         // Audit log
         logger.info("Entity record created: entityId={}, recordId={}, userId={}", 
                 entityId, record.getRecordId(), user.getUserId());
@@ -138,6 +150,15 @@ public class EntityRecordService {
 
         record = entityRecordRepository.save(record);
 
+        // Re-index in OpenSearch (async, non-blocking)
+        try {
+            searchIndexingService.indexRecord(entity, record);
+        } catch (Exception e) {
+            logger.warn("Failed to re-index record in search: entityId={}, recordId={}", 
+                    entityId, recordId, e);
+            // Don't fail the operation if indexing fails
+        }
+
         // Audit log
         logger.info("Entity record updated: entityId={}, recordId={}, userId={}", 
                 entityId, recordId, user.getUserId());
@@ -165,6 +186,15 @@ public class EntityRecordService {
         record.setUpdatedBy(user);
 
         entityRecordRepository.save(record);
+
+        // Remove from search index
+        try {
+            searchIndexingService.removeRecord(entityId, recordId);
+        } catch (Exception e) {
+            logger.warn("Failed to remove record from search index: entityId={}, recordId={}", 
+                    entityId, recordId, e);
+            // Don't fail the operation if indexing fails
+        }
 
         // Audit log
         logger.info("Entity record deleted: entityId={}, recordId={}, userId={}", 

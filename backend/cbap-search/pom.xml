@@ -23,6 +23,17 @@
             <artifactId>cbap-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.cbap</groupId>
+            <artifactId>cbap-persistence</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <!-- Spring Boot Starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
         
         <!-- OpenSearch Java Client (migrated from deprecated REST High-Level Client) -->
         <dependency>
