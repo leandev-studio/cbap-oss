@@ -6,6 +6,8 @@ import { EntityListPage } from './metadata-ui/EntityListPage';
 import { EntityDetailPage } from './metadata-ui/EntityDetailPage';
 import { EntityCreatePage } from './metadata-ui/EntityCreatePage';
 import { LoginPage } from './pages/LoginPage';
+import { SearchResultsPage } from './pages/SearchResultsPage';
+import { EntityDefinitionsAdminPage } from './pages/EntityDefinitionsAdminPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -50,6 +52,22 @@ function App() {
           element={
             <ProtectedRoute>
               <EntityDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="search"
+          element={
+            <ProtectedRoute>
+              <SearchResultsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/entity-definitions"
+          element={
+            <ProtectedRoute>
+              <EntityDefinitionsAdminPage />
             </ProtectedRoute>
           }
         />

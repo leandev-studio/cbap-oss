@@ -68,7 +68,8 @@ public class SearchIndexingService {
                     .build();
 
             openSearchClient.index(request);
-            logger.debug("Indexed record: entityId={}, recordId={}", entity.getEntityId(), record.getRecordId());
+            logger.info("Indexed record: entityId={}, recordId={}, indexedFields={}", 
+                    entity.getEntityId(), record.getRecordId(), indexedFields.keySet());
 
         } catch (IOException e) {
             logger.error("Error indexing record: entityId={}, recordId={}", 
@@ -96,5 +97,50 @@ public class SearchIndexingService {
             logger.error("Error removing record from index: entityId={}, recordId={}", entityId, recordId, e);
             // Don't throw - indexing failures shouldn't break record operations
         }
+    }
+
+    /**
+     * Reindex all records for an entity.
+     * @param entity The entity definition
+     * @param records List of all records to index
+     * @return Number of records successfully indexed
+     */
+    public int reindexAllRecords(EntityDefinition entity, java.util.List<EntityRecord> records) {
+        int indexedCount = 0;
+        int failedCount = 0;
+
+        // Ensure index exists
+        try {
+            if (indexService.indexExists(entity.getEntityId())) {
+                // Delete existing index to start fresh
+                indexService.deleteIndex(entity.getEntityId());
+            }
+            indexService.createIndex(entity.getEntityId());
+        } catch (IOException e) {
+            logger.error("Error creating index for reindexing: entityId={}", entity.getEntityId(), e);
+            throw new RuntimeException("Failed to create index for reindexing", e);
+        }
+
+        // Index all records
+        for (EntityRecord record : records) {
+            try {
+                indexRecord(entity, record);
+                indexedCount++;
+            } catch (Exception e) {
+                failedCount++;
+                logger.warn("Failed to index record during reindex: entityId={}, recordId={}", 
+                        entity.getEntityId(), record.getRecordId(), e);
+            }
+        }
+
+        logger.info("Reindexing completed: entityId={}, totalRecords={}, indexed={}, failed={}", 
+                entity.getEntityId(), records.size(), indexedCount, failedCount);
+        
+        if (failedCount > 0) {
+            logger.warn("Some records failed to index during reindex: entityId={}, failedCount={}", 
+                    entity.getEntityId(), failedCount);
+        }
+
+        return indexedCount;
     }
 }

@@ -233,21 +233,21 @@ Tasks are organized to:
   - [x] API: `GET /api/v1/searches` (user's saved searches)
 
 ### 5.2 Frontend: Search UI
-- ⬜ **Global Search**
-  - [ ] Global search bar component (header)
-  - [ ] Search results page
-  - [ ] Cross-entity search results
-  - [ ] Result grouping by entity type
-  - [ ] Link to entity detail from results
+- ✅ **Global Search**
+  - [x] Global search bar component (header)
+  - [x] Search results page
+  - [x] Cross-entity search results
+  - [x] Result grouping by entity type
+  - [x] Link to entity detail from results
 
-- ⬜ **Entity List Filtering**
-  - [ ] Filter panel component
-  - [ ] Filter by property values
-  - [ ] Date range filters
-  - [ ] Reference filters
-  - [ ] Apply/clear filters
-  - [ ] Save filter as search
-  - [ ] Load saved searches
+- ✅ **Entity List Filtering**
+  - [x] Filter panel component
+  - [x] Filter by property values
+  - [x] Date range filters
+  - [x] Reference filters
+  - [x] Apply/clear filters
+  - [x] Save filter as search
+  - [x] Load saved searches
 
 **Phase 5 Deliverable**: Users can search across entities and filter lists
 

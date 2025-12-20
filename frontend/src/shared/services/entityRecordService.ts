@@ -95,3 +95,31 @@ export async function updateRecord(
 export async function deleteRecord(entityId: string, recordId: string): Promise<void> {
   await apiClient.delete(`/entities/${entityId}/records/${recordId}`);
 }
+
+/**
+ * Filter Request
+ */
+export interface FilterRequest {
+  filters?: Record<string, any>;
+  searchText?: string;
+}
+
+/**
+ * Get records with database-based filtering (not using OpenSearch).
+ * This is used for grid search and advanced filters.
+ */
+export async function getRecordsWithFilters(
+  entityId: string,
+  request: FilterRequest,
+  page: number = 0,
+  size: number = 20
+): Promise<PaginatedRecords> {
+  const response = await apiClient.post<PaginatedRecords>(
+    `/entities/${entityId}/records/filter`,
+    request,
+    {
+      params: { page, size },
+    }
+  );
+  return response.data;
+}

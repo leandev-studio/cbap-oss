@@ -1,6 +1,9 @@
 package com.cbap.api.controller;
 
+import com.cbap.api.service.SearchDisplayService;
 import com.cbap.search.service.SearchQueryService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,10 +20,16 @@ import java.util.Map;
 @RequestMapping("/api/v1")
 public class SearchController {
 
-    private final SearchQueryService searchQueryService;
+    private static final Logger logger = LoggerFactory.getLogger(SearchController.class);
 
-    public SearchController(SearchQueryService searchQueryService) {
+    private final SearchQueryService searchQueryService;
+    private final SearchDisplayService searchDisplayService;
+
+    public SearchController(
+            SearchQueryService searchQueryService,
+            SearchDisplayService searchDisplayService) {
         this.searchQueryService = searchQueryService;
+        this.searchDisplayService = searchDisplayService;
     }
 
     /**
@@ -45,7 +54,12 @@ public class SearchController {
                     .body(Map.of("error", "Bad Request", "message", "Query parameter 'q' is required"));
         }
 
+        logger.info("Search request received: q={}, entity={}, page={}, size={}", q, entity, page, size);
+        
         SearchQueryService.SearchResult result = searchQueryService.search(q, entity, page, size);
+        
+        logger.info("Search completed: q={}, entity={}, totalHits={}, returnedHits={}", 
+                q, entity, result.getTotalHits(), result.getHits().size());
 
         Map<String, Object> response = new HashMap<>();
         response.put("query", q);
@@ -58,6 +72,14 @@ public class SearchController {
             hitMap.put("entityId", hit.getEntityId());
             hitMap.put("recordId", hit.getRecordId());
             hitMap.put("data", hit.getSource());
+            
+            // Compute display value from metadata
+            String displayValue = searchDisplayService.computeDisplayValue(
+                    hit.getEntityId(), hit.getSource());
+            if (displayValue != null) {
+                hitMap.put("displayValue", displayValue);
+            }
+            
             return hitMap;
         }).toList());
 
@@ -102,6 +124,14 @@ public class SearchController {
                 hitMap.put("entityId", hit.getEntityId());
                 hitMap.put("recordId", hit.getRecordId());
                 hitMap.put("data", hit.getSource());
+                
+                // Compute display value from metadata
+                String displayValue = searchDisplayService.computeDisplayValue(
+                        hit.getEntityId(), hit.getSource());
+                if (displayValue != null) {
+                    hitMap.put("displayValue", displayValue);
+                }
+                
                 return hitMap;
             }).toList());
 

@@ -52,6 +52,63 @@ public class EntityRecordController {
     }
 
     /**
+     * Get records with database-based filtering (not using OpenSearch).
+     * POST /api/v1/entities/{entityId}/records/filter
+     */
+    @PostMapping("/{entityId}/records/filter")
+    public ResponseEntity<Map<String, Object>> getRecordsWithFilters(
+            @PathVariable String entityId,
+            @RequestBody(required = false) FilterRequest request,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            Authentication authentication) {
+        
+        if (request == null) {
+            request = new FilterRequest();
+        }
+        
+        Page<EntityRecordService.EntityRecordDTO> records = entityRecordService.getRecordsWithFilters(
+                entityId, 
+                request.getFilters() != null ? request.getFilters() : Map.of(),
+                request.getSearchText(),
+                page, 
+                size);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("records", records.getContent());
+        response.put("totalElements", records.getTotalElements());
+        response.put("totalPages", records.getTotalPages());
+        response.put("page", records.getNumber());
+        response.put("size", records.getSize());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Filter request DTO.
+     */
+    public static class FilterRequest {
+        private Map<String, Object> filters;
+        private String searchText;
+
+        public Map<String, Object> getFilters() {
+            return filters;
+        }
+
+        public void setFilters(Map<String, Object> filters) {
+            this.filters = filters;
+        }
+
+        public String getSearchText() {
+            return searchText;
+        }
+
+        public void setSearchText(String searchText) {
+            this.searchText = searchText;
+        }
+    }
+
+    /**
      * Get a single record by ID.
      * GET /api/v1/entities/{entityId}/records/{recordId}
      */
