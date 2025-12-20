@@ -6,6 +6,7 @@ import { FormBooleanField } from './FormBooleanField';
 import { FormSelectField } from './FormSelectField';
 import { FormMultiSelectField } from './FormMultiSelectField';
 import { FormReferenceField } from './FormReferenceField';
+import { MasterDetailForm } from './MasterDetailForm';
 import { Typography, Box } from '@mui/material';
 
 interface FormFieldProps {
@@ -41,6 +42,19 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           </Typography>
         )}
       </Box>
+    );
+  }
+
+  // Check if this is a master-detail field (nested entity array)
+  if (property.metadataJson?.isDetailEntityArray === true) {
+    return (
+      <MasterDetailForm
+        property={property}
+        value={Array.isArray(value) ? value : null}
+        onChange={onChange}
+        error={error}
+        helperText={helperText}
+      />
     );
   }
 

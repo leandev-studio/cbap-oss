@@ -39,16 +39,34 @@ export function FormReferenceField({
     enabled: !!property.referenceEntityId,
   });
 
-  // Create options from records (use a display field like 'name' or first string field)
+  // Create options from records using metadata-driven displayField configuration
   const options = (recordsData?.records || []).map((record) => {
-    // Try to find a display field (name, title, etc.)
-    const displayField = Object.keys(record.data).find(
-      (key) => typeof record.data[key] === 'string' && record.data[key]
-    );
-    const displayValue = displayField ? record.data[displayField] : record.recordId;
+    let displayValue: string;
+    
+    // Get displayField from property metadata (metadata-driven, not hardcoded)
+    const displayField = property.metadataJson?.displayField as string | undefined;
+    
+    if (displayField && record.data?.[displayField]) {
+      // Use configured displayField
+      displayValue = String(record.data[displayField]);
+    } else {
+      // Fallback: try common field names first, then first string field
+      const commonFields = ['name', 'title', 'companyName', 'label'];
+      const commonField = commonFields.find(field => record.data?.[field]);
+      if (commonField) {
+        displayValue = String(record.data[commonField]);
+      } else {
+        // Final fallback: first string field
+        const firstStringField = Object.keys(record.data || {}).find(
+          (key) => typeof record.data[key] === 'string' && record.data[key]
+        );
+        displayValue = firstStringField ? String(record.data[firstStringField]) : record.recordId;
+      }
+    }
+    
     return {
       id: record.recordId,
-      label: String(displayValue),
+      label: displayValue,
       record,
     };
   });

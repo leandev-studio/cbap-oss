@@ -186,15 +186,44 @@ public class EntityRecordService {
             String propertyName = property.getPropertyName();
             Object value = data.get(propertyName);
 
+            // Check if this is a master-detail field
+            boolean isMasterDetail = false;
+            if (property.getMetadataJson() != null) {
+                Object isDetailEntityArray = property.getMetadataJson().get("isDetailEntityArray");
+                isMasterDetail = isDetailEntityArray instanceof Boolean && (Boolean) isDetailEntityArray;
+            }
+
             // Check required fields
-            if (property.getRequired() && (value == null || (value instanceof String && ((String) value).trim().isEmpty()))) {
-                errors.add("Required field '" + (property.getLabel() != null ? property.getLabel() : propertyName) + "' is missing");
-                continue;
+            if (property.getRequired()) {
+                if (value == null) {
+                    errors.add("Required field '" + (property.getLabel() != null ? property.getLabel() : propertyName) + "' is missing");
+                    continue;
+                }
+                // For master-detail fields, check if array is empty
+                if (isMasterDetail && value instanceof java.util.List && ((java.util.List<?>) value).isEmpty()) {
+                    errors.add("Required field '" + (property.getLabel() != null ? property.getLabel() : propertyName) + "' must have at least one item");
+                    continue;
+                }
+                // For string fields, check if empty
+                if (!isMasterDetail && value instanceof String && ((String) value).trim().isEmpty()) {
+                    errors.add("Required field '" + (property.getLabel() != null ? property.getLabel() : propertyName) + "' cannot be empty");
+                    continue;
+                }
             }
 
             // Skip validation if value is null and field is not required
             if (value == null) {
                 continue;
+            }
+
+            // Handle master-detail fields (they're stored as arrays but property type is string)
+            if (isMasterDetail) {
+                // Master-detail fields should be arrays
+                if (!(value instanceof java.util.List)) {
+                    errors.add("Field '" + (property.getLabel() != null ? property.getLabel() : propertyName) + "' must be an array");
+                }
+                // TODO: Could validate each line item against the detail entity definition
+                continue; // Skip regular type validation for master-detail fields
             }
 
             // Type validation
@@ -267,12 +296,24 @@ public class EntityRecordService {
      * Get current user from authentication.
      */
     private User getCurrentUser(Authentication authentication) {
-        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
-            throw new RuntimeException("User not authenticated");
+        if (authentication == null) {
+            throw new IllegalStateException("User not authenticated - authentication is null");
         }
+        
+        if (!(authentication.getPrincipal() instanceof UserDetails)) {
+            throw new IllegalStateException("Invalid authentication principal type: " + 
+                (authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "null"));
+        }
+        
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        return userRepository.findByUsername(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        String username = userDetails.getUsername();
+        
+        if (username == null || username.isEmpty()) {
+            throw new IllegalStateException("Username is null or empty in authentication");
+        }
+        
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalStateException("User not found: " + username));
     }
 
     /**

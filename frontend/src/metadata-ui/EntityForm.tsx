@@ -99,6 +99,17 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
             break;
         }
       }
+
+      // Master-detail validation (nested entity array)
+      if (property.metadataJson?.isDetailEntityArray === true) {
+        const minItems = property.metadataJson?.minItems as number | undefined;
+        if (minItems !== undefined) {
+          const arrayValue = Array.isArray(value) ? value : [];
+          if (arrayValue.length < minItems) {
+            newErrors[property.propertyName] = `${property.label || property.propertyName} must have at least ${minItems} item(s)`;
+          }
+        }
+      }
     });
 
     setErrors(newErrors);
@@ -211,24 +222,44 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
               </Typography>
             </Grid>
           ) : (
-            formProperties.map((property) => {
-              // Skip read-only fields in create mode
-              if (!isEditMode && property.readOnly) {
-                return null;
-              }
-
-              return (
-                <Grid item xs={12} sm={6} md={4} key={property.propertyId}>
-                  <FormField
-                    property={property}
-                    value={formData[property.propertyName]}
-                    onChange={(value) => handleFieldChange(property.propertyName, value)}
-                    error={!!errors[property.propertyName]}
-                    helperText={errors[property.propertyName]}
-                  />
-                </Grid>
-              );
-            })
+            <>
+              {/* Header Fields */}
+              {formProperties
+                .filter((property) => {
+                  // Skip read-only fields in create mode
+                  if (!isEditMode && property.readOnly) {
+                    return false;
+                  }
+                  // Skip master-detail fields (they'll be shown separately)
+                  return property.metadataJson?.isDetailEntityArray !== true;
+                })
+                .map((property) => (
+                  <Grid item xs={12} sm={6} md={4} key={property.propertyId}>
+                    <FormField
+                      property={property}
+                      value={formData[property.propertyName]}
+                      onChange={(value) => handleFieldChange(property.propertyName, value)}
+                      error={!!errors[property.propertyName]}
+                      helperText={errors[property.propertyName]}
+                    />
+                  </Grid>
+                ))}
+              
+              {/* Master-Detail Fields (Line Items) - Full Width */}
+              {formProperties
+                .filter((property) => property.metadataJson?.isDetailEntityArray === true)
+                .map((property) => (
+                  <Grid item xs={12} key={property.propertyId}>
+                    <FormField
+                      property={property}
+                      value={formData[property.propertyName]}
+                      onChange={(value) => handleFieldChange(property.propertyName, value)}
+                      error={!!errors[property.propertyName]}
+                      helperText={errors[property.propertyName]}
+                    />
+                  </Grid>
+                ))}
+            </>
           )}
         </Grid>
 

@@ -73,7 +73,12 @@ export function EntitiesOverviewPage() {
         </Paper>
       ) : (
         <Grid container spacing={3}>
-          {entities.map((entity) => (
+          {entities
+            .filter((entity) => {
+              // Filter out detail entities (they shouldn't be displayed as standalone entities)
+              return !entity.metadataJson?.isDetailEntity;
+            })
+            .map((entity) => (
             <Grid item xs={12} sm={6} md={4} key={entity.entityId}>
               <Card
                 elevation={0}

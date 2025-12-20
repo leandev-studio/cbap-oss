@@ -35,7 +35,7 @@ echo "This will update the checksums in flyway_schema_history to match the curre
 echo ""
 
 # Use Flyway Maven plugin to repair
-cd "$PROJECT_ROOT/backend"
+cd "$PROJECT_ROOT"
 mvn flyway:repair -pl cbap-app \
     -Dflyway.url="jdbc:postgresql://localhost:5432/$DB_NAME" \
     -Dflyway.user="$DB_USER" \

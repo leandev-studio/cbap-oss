@@ -102,9 +102,16 @@ export function EntityDetailPage() {
     );
   }
 
-  // Group properties by category or display order
-  // For now, just show all properties in order
-  const displayProperties = entityDefinition.properties || [];
+  // Separate properties into header fields, line items, and other fields
+  const lineItemsProperty = entityDefinition.properties.find(
+    (p) => p.metadataJson?.isDetailEntityArray === true
+  );
+  const headerProperties = entityDefinition.properties.filter(
+    (p) => p.propertyId !== lineItemsProperty?.propertyId && p.propertyType !== 'calculated'
+  );
+  const calculatedProperties = entityDefinition.properties.filter(
+    (p) => p.propertyType === 'calculated'
+  );
 
   return (
     <Box sx={{ width: '100%', height: '100%' }}>
@@ -140,9 +147,6 @@ export function EntityDetailPage() {
           <Typography variant="h4" component="h1" gutterBottom color="text.primary">
             {entityDefinition.name}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Record ID: {recordId}
-          </Typography>
         </Box>
         {!isEditMode && (
           <Button
@@ -174,15 +178,16 @@ export function EntityDetailPage() {
             borderColor: 'divider',
           }}
         >
+          {/* Header Fields */}
           <Grid container spacing={3}>
-            {displayProperties.length === 0 ? (
+            {headerProperties.length === 0 ? (
               <Grid item xs={12}>
                 <Typography variant="body2" color="text.secondary">
                   No properties defined for this entity
                 </Typography>
               </Grid>
             ) : (
-              displayProperties.map((property) => {
+              headerProperties.map((property) => {
                 const value = record.data[property.propertyName];
 
                 return (
@@ -198,6 +203,48 @@ export function EntityDetailPage() {
               })
             )}
           </Grid>
+
+          {/* Line Items Section (if exists) */}
+          {lineItemsProperty && (
+            <>
+              <Divider sx={{ my: 3 }} />
+              <Box>
+                <EntityDetailField
+                  property={lineItemsProperty}
+                  value={record.data[lineItemsProperty.propertyName]}
+                  record={record}
+                  entityDefinition={entityDefinition}
+                />
+              </Box>
+            </>
+          )}
+
+          {/* Calculated Fields (if any) */}
+          {calculatedProperties.length > 0 && (
+            <>
+              <Divider sx={{ my: 3 }} />
+              <Box>
+                <Typography variant="h6" gutterBottom color="text.secondary">
+                  Calculated Fields
+                </Typography>
+                <Grid container spacing={3}>
+                  {calculatedProperties.map((property) => {
+                    const value = record.data[property.propertyName];
+                    return (
+                      <Grid item xs={12} sm={6} md={4} key={property.propertyId}>
+                        <EntityDetailField
+                          property={property}
+                          value={value}
+                          record={record}
+                          entityDefinition={entityDefinition}
+                        />
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              </Box>
+            </>
+          )}
 
           {/* Metadata Section */}
           <Divider sx={{ my: 3 }} />

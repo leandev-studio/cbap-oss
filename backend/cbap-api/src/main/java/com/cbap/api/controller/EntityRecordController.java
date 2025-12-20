@@ -90,6 +90,12 @@ public class EntityRecordController {
             @Valid @RequestBody EntityRecordService.CreateRecordRequest request,
             Authentication authentication) {
         
+        // Verify authentication is present
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+        
         // TODO: Add authorization check - verify user has permission to create records for this entity
         // For now, just require authentication
         
@@ -120,6 +126,12 @@ public class EntityRecordController {
             @Valid @RequestBody EntityRecordService.UpdateRecordRequest request,
             Authentication authentication) {
         
+        // Verify authentication is present
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+        
         // TODO: Add authorization check - verify user has permission to update records for this entity
         // For now, just require authentication
         
@@ -148,6 +160,12 @@ public class EntityRecordController {
             @PathVariable String entityId,
             @PathVariable UUID recordId,
             Authentication authentication) {
+        
+        // Verify authentication is present
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
         
         // TODO: Add authorization check - verify user has permission to delete records for this entity
         // For now, just require authentication
