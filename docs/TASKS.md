@@ -288,14 +288,14 @@ Tasks are organized to:
   - [x] API: `POST /api/v1/tasks/{taskId}/decisions` (approve/reject/request-changes)
 
 ### 6.3 Frontend: Workflow UI
-- ⬜ **Workflow Action Bar**
-  - [ ] Workflow action bar component (on detail view)
-  - [ ] Display current state
-  - [ ] Show available transitions (from metadata)
-  - [ ] Transition buttons
-  - [ ] Transition confirmation dialogs
-  - [ ] Transition comments/notes
-  - [ ] State history display
+- ✅ **Workflow Action Bar**
+  - [x] Workflow action bar component (on detail view)
+  - [x] Display current state
+  - [x] Show available transitions (from metadata)
+  - [x] Transition buttons
+  - [x] Transition confirmation dialogs
+  - [x] Transition comments/notes
+  - [x] State history display
 
 ### 6.4 Frontend: Tasks UI
 - ⬜ **Tasks Page**

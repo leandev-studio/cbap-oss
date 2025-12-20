@@ -19,6 +19,7 @@ import { getEntityById } from '../shared/services/entityMetadataService';
 import { getRecord } from '../shared/services/entityRecordService';
 import { EntityDetailField } from './EntityDetailField';
 import { EntityForm } from './EntityForm';
+import { WorkflowActionBar } from './WorkflowActionBar';
 
 /**
  * Entity Detail Page Component
@@ -168,16 +169,24 @@ export function EntityDetailPage() {
           onCancel={handleCancelEdit}
         />
       ) : (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            backgroundColor: 'background.paper',
-            borderRadius: 2,
-            border: 1,
-            borderColor: 'divider',
-          }}
-        >
+        <>
+          {/* Workflow Action Bar */}
+          <WorkflowActionBar
+            entityId={entityId}
+            recordId={recordId}
+            currentState={record.state}
+          />
+
+          <Paper
+            elevation={0}
+            sx={{
+              p: 3,
+              backgroundColor: 'background.paper',
+              borderRadius: 2,
+              border: 1,
+              borderColor: 'divider',
+            }}
+          >
           {/* Header Fields */}
           <Grid container spacing={3}>
             {headerProperties.length === 0 ? (
@@ -285,7 +294,8 @@ export function EntityDetailPage() {
               </Grid>
             </Grid>
           </Box>
-        </Paper>
+          </Paper>
+        </>
       )}
     </Box>
   );
