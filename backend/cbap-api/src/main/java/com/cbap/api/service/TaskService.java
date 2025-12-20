@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -29,18 +30,24 @@ public class TaskService {
     private final EntityRecordRepository entityRecordRepository;
     private final UserRepository userRepository;
     private final WorkflowTransitionRepository workflowTransitionRepository;
+    private final WorkflowDefinitionRepository workflowDefinitionRepository;
+    private final SearchDisplayService searchDisplayService;
 
     public TaskService(
             TaskRepository taskRepository,
             EntityDefinitionRepository entityDefinitionRepository,
             EntityRecordRepository entityRecordRepository,
             UserRepository userRepository,
-            WorkflowTransitionRepository workflowTransitionRepository) {
+            WorkflowTransitionRepository workflowTransitionRepository,
+            WorkflowDefinitionRepository workflowDefinitionRepository,
+            SearchDisplayService searchDisplayService) {
         this.taskRepository = taskRepository;
         this.entityDefinitionRepository = entityDefinitionRepository;
         this.entityRecordRepository = entityRecordRepository;
         this.userRepository = userRepository;
         this.workflowTransitionRepository = workflowTransitionRepository;
+        this.workflowDefinitionRepository = workflowDefinitionRepository;
+        this.searchDisplayService = searchDisplayService;
     }
 
     /**
@@ -68,6 +75,31 @@ public class TaskService {
         Task task = taskRepository.findByTaskId(taskId)
                 .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
         return toDTO(task);
+    }
+
+    /**
+     * Get available workflow transitions for a task.
+     */
+    @Transactional(readOnly = true)
+    public List<TaskTransitionDTO> getAvailableTransitions(UUID taskId) {
+        Task task = taskRepository.findByTaskId(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
+
+        String currentState = task.getStatus().name();
+        List<com.cbap.persistence.entity.WorkflowTransition> transitions = 
+                workflowTransitionRepository.findByWorkflowIdAndFromState("TaskWorkflow", currentState);
+
+        return transitions.stream()
+                .map(t -> {
+                    TaskTransitionDTO dto = new TaskTransitionDTO();
+                    dto.setTransitionId(t.getTransitionId().toString());
+                    dto.setFromState(t.getFromState());
+                    dto.setToState(t.getToState());
+                    dto.setActionLabel(t.getActionLabel());
+                    dto.setDescription(t.getDescription());
+                    return dto;
+                })
+                .toList();
     }
 
     /**
@@ -156,7 +188,65 @@ public class TaskService {
     }
 
     /**
-     * Complete a task.
+     * Execute a workflow transition for a task.
+     */
+    @Transactional
+    public TaskDTO executeTaskTransition(UUID taskId, UUID transitionId, String comments, Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
+
+        Task task = taskRepository.findByTaskId(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found: " + taskId));
+
+        // Verify user is the assignee
+        if (!task.getAssignee().getUserId().equals(currentUser.getUserId())) {
+            throw new IllegalStateException("Only the task assignee can execute transitions on the task");
+        }
+
+        // Get workflow and transition
+        com.cbap.persistence.entity.WorkflowDefinition workflow = workflowDefinitionRepository
+                .findById("TaskWorkflow")
+                .orElseThrow(() -> new IllegalArgumentException("TaskWorkflow not found"));
+
+        com.cbap.persistence.entity.WorkflowTransition transition = workflowTransitionRepository
+                .findByTransitionId(transitionId)
+                .orElseThrow(() -> new IllegalArgumentException("Transition not found: " + transitionId));
+
+        // Verify transition belongs to TaskWorkflow
+        if (!transition.getWorkflow().getWorkflowId().equals("TaskWorkflow")) {
+            throw new IllegalArgumentException("Transition does not belong to TaskWorkflow");
+        }
+
+        // Get current state
+        String currentState = task.getStatus().name();
+        
+        // Validate transition is valid from current state
+        if (!transition.getFromState().equals(currentState)) {
+            throw new IllegalStateException(
+                    String.format("Cannot execute transition from state '%s'. Current state is '%s'", 
+                            transition.getFromState(), currentState));
+        }
+
+        // Execute transition: update task status
+        Task.TaskStatus newStatus = Task.TaskStatus.valueOf(transition.getToState());
+        task.setStatus(newStatus);
+        task.setWorkflowState(transition.getToState());
+        
+        // If transitioning to DONE, set completion fields
+        if (newStatus == Task.TaskStatus.DONE) {
+            task.setCompletedAt(OffsetDateTime.now());
+            task.setCompletedBy(currentUser);
+        }
+
+        task = taskRepository.save(task);
+
+        logger.info("Task transition executed: taskId={}, fromState={}, toState={}, transitionId={}, userId={}",
+                taskId, currentState, transition.getToState(), transitionId, currentUser.getUserId());
+
+        return toDTO(task);
+    }
+
+    /**
+     * Complete a task (uses workflow transition to DONE).
      */
     @Transactional
     public TaskDTO completeTask(UUID taskId, Authentication authentication) {
@@ -170,16 +260,26 @@ public class TaskService {
             throw new IllegalStateException("Only the task assignee can complete the task");
         }
 
-        // Update task
-        task.setStatus(Task.TaskStatus.DONE);
-        task.setCompletedAt(OffsetDateTime.now());
-        task.setCompletedBy(currentUser);
+        // Find appropriate transition based on current status
+        String currentState = task.getStatus().name();
+        com.cbap.persistence.entity.WorkflowTransition transition;
+        
+        if (currentState.equals("OPEN")) {
+            // Use OPEN -> DONE transition
+            transition = workflowTransitionRepository
+                    .findByWorkflowIdAndFromStateAndToState("TaskWorkflow", "OPEN", "DONE")
+                    .orElseThrow(() -> new IllegalStateException("Transition OPEN -> DONE not found"));
+        } else if (currentState.equals("IN_PROGRESS")) {
+            // Use IN_PROGRESS -> DONE transition
+            transition = workflowTransitionRepository
+                    .findByWorkflowIdAndFromStateAndToState("TaskWorkflow", "IN_PROGRESS", "DONE")
+                    .orElseThrow(() -> new IllegalStateException("Transition IN_PROGRESS -> DONE not found"));
+        } else {
+            throw new IllegalStateException("Task is already in final state: " + currentState);
+        }
 
-        task = taskRepository.save(task);
-
-        logger.info("Task completed: taskId={}, userId={}", taskId, currentUser.getUserId());
-
-        return toDTO(task);
+        // Execute transition
+        return executeTaskTransition(taskId, transition.getTransitionId(), null, authentication);
     }
 
     /**
@@ -239,6 +339,21 @@ public class TaskService {
         dto.setCreatedAt(task.getCreatedAt());
         dto.setUpdatedAt(task.getUpdatedAt());
         dto.setCreatedById(task.getCreatedBy() != null ? task.getCreatedBy().getUserId().toString() : null);
+        
+        // Compute entity display value (like invoice number, order number, etc.)
+        try {
+            if (task.getRecord().getDataJson() != null) {
+                String displayValue = searchDisplayService.computeDisplayValue(
+                    task.getEntity().getEntityId(), 
+                    task.getRecord().getDataJson()
+                );
+                dto.setEntityDisplayValue(displayValue);
+            }
+        } catch (Exception e) {
+            logger.debug("Failed to compute entity display value for task: taskId={}, error={}", 
+                task.getTaskId(), e.getMessage());
+        }
+        
         return dto;
     }
 
@@ -278,6 +393,7 @@ public class TaskService {
         private OffsetDateTime createdAt;
         private OffsetDateTime updatedAt;
         private String createdById;
+        private String entityDisplayValue;
 
         // Getters and Setters
         public String getTaskId() { return taskId; }
@@ -318,6 +434,31 @@ public class TaskService {
         public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
         public String getCreatedById() { return createdById; }
         public void setCreatedById(String createdById) { this.createdById = createdById; }
+        public String getEntityDisplayValue() { return entityDisplayValue; }
+        public void setEntityDisplayValue(String entityDisplayValue) { this.entityDisplayValue = entityDisplayValue; }
+    }
+
+    /**
+     * Task Transition DTO.
+     */
+    public static class TaskTransitionDTO {
+        private String transitionId;
+        private String fromState;
+        private String toState;
+        private String actionLabel;
+        private String description;
+
+        // Getters and Setters
+        public String getTransitionId() { return transitionId; }
+        public void setTransitionId(String transitionId) { this.transitionId = transitionId; }
+        public String getFromState() { return fromState; }
+        public void setFromState(String fromState) { this.fromState = fromState; }
+        public String getToState() { return toState; }
+        public void setToState(String toState) { this.toState = toState; }
+        public String getActionLabel() { return actionLabel; }
+        public void setActionLabel(String actionLabel) { this.actionLabel = actionLabel; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
     }
 
     /**

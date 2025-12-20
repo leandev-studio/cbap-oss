@@ -26,6 +26,7 @@ export interface WorkflowAuditLogEntry {
   transitionId: string;
   transitionLabel: string;
   performedBy: string;
+  performedByUsername?: string;
   performedAt: string;
   comments?: string;
   metadataJson?: Record<string, any>;

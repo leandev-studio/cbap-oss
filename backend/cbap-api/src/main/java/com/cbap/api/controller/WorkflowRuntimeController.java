@@ -127,7 +127,7 @@ public class WorkflowRuntimeController {
             Map<String, Object> response = new HashMap<>();
             response.put("entityId", entityId);
             response.put("recordId", recordId);
-            response.put("auditLogs", auditLogs);
+            response.put("auditLog", auditLogs); // Frontend expects 'auditLog' not 'auditLogs'
             response.put("count", auditLogs.size());
 
             return ResponseEntity.ok(response);

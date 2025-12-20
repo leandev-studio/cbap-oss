@@ -17,11 +17,9 @@ public interface WorkflowDefinitionRepository extends JpaRepository<WorkflowDefi
 
     /**
      * Find workflow by ID with states and transitions.
+     * Note: We fetch states and transitions separately to avoid MultipleBagFetchException.
      */
-    @Query("SELECT DISTINCT w FROM WorkflowDefinition w " +
-           "LEFT JOIN FETCH w.states s " +
-           "LEFT JOIN FETCH w.transitions t " +
-           "WHERE w.workflowId = :workflowId")
+    @Query("SELECT w FROM WorkflowDefinition w WHERE w.workflowId = :workflowId")
     Optional<WorkflowDefinition> findByWorkflowIdWithStatesAndTransitions(@Param("workflowId") String workflowId);
 
     /**

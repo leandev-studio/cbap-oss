@@ -125,6 +125,75 @@ public class TaskController {
     }
 
     /**
+     * Get available transitions for a task.
+     * GET /api/v1/tasks/{taskId}/transitions
+     */
+    @GetMapping("/{taskId}/transitions")
+    public ResponseEntity<Map<String, Object>> getAvailableTransitions(
+            @PathVariable UUID taskId,
+            Authentication authentication) {
+
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+
+        try {
+            java.util.List<TaskService.TaskTransitionDTO> transitions = taskService.getAvailableTransitions(taskId);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("taskId", taskId.toString());
+            response.put("transitions", transitions);
+            response.put("count", transitions.size());
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Not Found", "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Execute a workflow transition for a task.
+     * POST /api/v1/tasks/{taskId}/transitions/{transitionId}
+     */
+    @PostMapping("/{taskId}/transitions/{transitionId}")
+    public ResponseEntity<Map<String, Object>> executeTransition(
+            @PathVariable UUID taskId,
+            @PathVariable UUID transitionId,
+            @RequestBody(required = false) TaskTransitionRequest request,
+            Authentication authentication) {
+
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+
+        if (request == null) {
+            request = new TaskTransitionRequest();
+        }
+
+        try {
+            TaskService.TaskDTO task = taskService.executeTaskTransition(
+                    taskId, transitionId, request.getComments(), authentication);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("taskId", task.getTaskId());
+            response.put("status", task.getStatus());
+            response.put("fromState", request.getFromState());
+            response.put("toState", task.getStatus());
+
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Bad Request", "message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Conflict", "message", e.getMessage()));
+        }
+    }
+
+    /**
      * Submit a decision for a task (approve/reject/request-changes).
      * POST /api/v1/tasks/{taskId}/decisions
      */
@@ -165,6 +234,30 @@ public class TaskController {
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "Forbidden", "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Task Transition Request DTO.
+     */
+    public static class TaskTransitionRequest {
+        private String comments;
+        private String fromState;
+
+        public String getComments() {
+            return comments;
+        }
+
+        public void setComments(String comments) {
+            this.comments = comments;
+        }
+
+        public String getFromState() {
+            return fromState;
+        }
+
+        public void setFromState(String fromState) {
+            this.fromState = fromState;
         }
     }
 

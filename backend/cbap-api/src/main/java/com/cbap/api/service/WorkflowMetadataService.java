@@ -4,6 +4,9 @@ import com.cbap.persistence.entity.WorkflowDefinition;
 import com.cbap.persistence.entity.WorkflowState;
 import com.cbap.persistence.entity.WorkflowTransition;
 import com.cbap.persistence.repository.WorkflowDefinitionRepository;
+import com.cbap.persistence.repository.WorkflowStateRepository;
+import com.cbap.persistence.repository.WorkflowTransitionRepository;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -21,9 +24,16 @@ public class WorkflowMetadataService {
     private static final Logger logger = LoggerFactory.getLogger(WorkflowMetadataService.class);
 
     private final WorkflowDefinitionRepository workflowDefinitionRepository;
+    private final WorkflowStateRepository workflowStateRepository;
+    private final WorkflowTransitionRepository workflowTransitionRepository;
 
-    public WorkflowMetadataService(WorkflowDefinitionRepository workflowDefinitionRepository) {
+    public WorkflowMetadataService(
+            WorkflowDefinitionRepository workflowDefinitionRepository,
+            WorkflowStateRepository workflowStateRepository,
+            WorkflowTransitionRepository workflowTransitionRepository) {
         this.workflowDefinitionRepository = workflowDefinitionRepository;
+        this.workflowStateRepository = workflowStateRepository;
+        this.workflowTransitionRepository = workflowTransitionRepository;
     }
 
     /**
@@ -32,6 +42,12 @@ public class WorkflowMetadataService {
     @Transactional(readOnly = true)
     public List<WorkflowDefinitionDTO> getAllWorkflows() {
         List<WorkflowDefinition> workflows = workflowDefinitionRepository.findAllByOrderByNameAsc();
+        // Initialize lazy collections for each workflow separately to avoid MultipleBagFetchException
+        // Using Hibernate.initialize() is safe even with orphanRemoval=true because we're not replacing the collection
+        for (WorkflowDefinition workflow : workflows) {
+            Hibernate.initialize(workflow.getStates());
+            Hibernate.initialize(workflow.getTransitions());
+        }
         return workflows.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -43,8 +59,14 @@ public class WorkflowMetadataService {
     @Transactional(readOnly = true)
     public WorkflowDefinitionDTO getWorkflowById(String workflowId) {
         WorkflowDefinition workflow = workflowDefinitionRepository
-                .findByWorkflowIdWithStatesAndTransitions(workflowId)
+                .findById(workflowId)
                 .orElseThrow(() -> new IllegalArgumentException("Workflow not found: " + workflowId));
+        
+        // Initialize lazy collections using Hibernate.initialize() to avoid MultipleBagFetchException
+        // This is safe even with orphanRemoval=true because we're not replacing the collection
+        Hibernate.initialize(workflow.getStates());
+        Hibernate.initialize(workflow.getTransitions());
+        
         return toDTO(workflow);
     }
 

@@ -4,6 +4,7 @@ import com.cbap.persistence.entity.*;
 import com.cbap.persistence.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.hibernate.Hibernate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class WorkflowRuntimeService {
     private final EntityDefinitionRepository entityDefinitionRepository;
     private final EntityRecordRepository entityRecordRepository;
     private final WorkflowDefinitionRepository workflowDefinitionRepository;
+    private final WorkflowStateRepository workflowStateRepository;
     private final WorkflowTransitionRepository workflowTransitionRepository;
     private final WorkflowAuditLogRepository workflowAuditLogRepository;
     private final UserRepository userRepository;
@@ -35,6 +37,7 @@ public class WorkflowRuntimeService {
             EntityDefinitionRepository entityDefinitionRepository,
             EntityRecordRepository entityRecordRepository,
             WorkflowDefinitionRepository workflowDefinitionRepository,
+            WorkflowStateRepository workflowStateRepository,
             WorkflowTransitionRepository workflowTransitionRepository,
             WorkflowAuditLogRepository workflowAuditLogRepository,
             UserRepository userRepository,
@@ -42,6 +45,7 @@ public class WorkflowRuntimeService {
         this.entityDefinitionRepository = entityDefinitionRepository;
         this.entityRecordRepository = entityRecordRepository;
         this.workflowDefinitionRepository = workflowDefinitionRepository;
+        this.workflowStateRepository = workflowStateRepository;
         this.workflowTransitionRepository = workflowTransitionRepository;
         this.workflowAuditLogRepository = workflowAuditLogRepository;
         this.userRepository = userRepository;
@@ -82,10 +86,15 @@ public class WorkflowRuntimeService {
         EntityRecord record = entityRecordRepository.findByEntityIdAndRecordId(entityId, recordId)
                 .orElseThrow(() -> new IllegalArgumentException("Record not found: " + recordId));
 
-        // Get workflow
+        // Get workflow (fetch separately to avoid MultipleBagFetchException)
         WorkflowDefinition workflow = workflowDefinitionRepository
-                .findByWorkflowIdWithStatesAndTransitions(entity.getWorkflowId())
+                .findById(entity.getWorkflowId())
                 .orElseThrow(() -> new IllegalArgumentException("Workflow not found: " + entity.getWorkflowId()));
+        
+        // Initialize lazy collections using Hibernate.initialize() to avoid MultipleBagFetchException
+        // This is safe even with orphanRemoval=true because we're not replacing the collection
+        Hibernate.initialize(workflow.getStates());
+        Hibernate.initialize(workflow.getTransitions());
 
         // Get transition
         WorkflowTransition transition = workflowTransitionRepository
@@ -158,6 +167,22 @@ public class WorkflowRuntimeService {
         logger.info("Workflow transition executed: entityId={}, recordId={}, fromState={}, toState={}, transitionId={}, userId={}",
                 entityId, recordId, previousState, transition.getToState(), transitionId, user.getUserId());
 
+        // Close tasks associated with this transition
+        List<com.cbap.persistence.entity.Task> relatedTasks = taskRepository.findByRecordId(recordId);
+        for (com.cbap.persistence.entity.Task task : relatedTasks) {
+            // Close tasks that are associated with this transition and are still open
+            if (task.getTransition() != null && 
+                task.getTransition().getTransitionId().equals(transitionId) &&
+                (task.getStatus() == com.cbap.persistence.entity.Task.TaskStatus.OPEN || 
+                 task.getStatus() == com.cbap.persistence.entity.Task.TaskStatus.IN_PROGRESS)) {
+                task.setStatus(com.cbap.persistence.entity.Task.TaskStatus.DONE);
+                task.setCompletedAt(OffsetDateTime.now());
+                task.setCompletedBy(user);
+                taskRepository.save(task);
+                logger.info("Closed task: taskId={}, transitionId={}", task.getTaskId(), transitionId);
+            }
+        }
+
         // Create tasks if transition metadata specifies task creation
         if (transition.getMetadataJson() != null) {
             @SuppressWarnings("unchecked")
@@ -217,7 +242,7 @@ public class WorkflowRuntimeService {
         if (currentState == null) {
             // If no state, get initial state from workflow
             WorkflowDefinition workflow = workflowDefinitionRepository
-                    .findByWorkflowIdWithStatesAndTransitions(entity.getWorkflowId())
+                    .findById(entity.getWorkflowId())
                     .orElse(null);
             if (workflow != null) {
                 currentState = workflow.getInitialState();
@@ -270,6 +295,7 @@ public class WorkflowRuntimeService {
         dto.setTransitionId(auditLog.getTransitionId() != null ? auditLog.getTransitionId().toString() : null);
         dto.setTransitionLabel(auditLog.getTransitionLabel());
         dto.setPerformedBy(auditLog.getPerformedBy().getUserId().toString());
+        dto.setPerformedByUsername(auditLog.getPerformedBy().getUsername()); // Add username
         dto.setPerformedAt(auditLog.getPerformedAt());
         dto.setComments(auditLog.getComments());
         dto.setMetadataJson(auditLog.getMetadataJson());
@@ -366,6 +392,7 @@ public class WorkflowRuntimeService {
         private String transitionId;
         private String transitionLabel;
         private String performedBy;
+        private String performedByUsername;
         private OffsetDateTime performedAt;
         private String comments;
         private java.util.Map<String, Object> metadataJson;
@@ -389,6 +416,8 @@ public class WorkflowRuntimeService {
         public void setTransitionLabel(String transitionLabel) { this.transitionLabel = transitionLabel; }
         public String getPerformedBy() { return performedBy; }
         public void setPerformedBy(String performedBy) { this.performedBy = performedBy; }
+        public String getPerformedByUsername() { return performedByUsername; }
+        public void setPerformedByUsername(String performedByUsername) { this.performedByUsername = performedByUsername; }
         public OffsetDateTime getPerformedAt() { return performedAt; }
         public void setPerformedAt(OffsetDateTime performedAt) { this.performedAt = performedAt; }
         public String getComments() { return comments; }

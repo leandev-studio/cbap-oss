@@ -298,14 +298,14 @@ Tasks are organized to:
   - [x] State history display
 
 ### 6.4 Frontend: Tasks UI
-- ⬜ **Tasks Page**
-  - [ ] Tasks list page
-  - [ ] Filter by status (open, in progress, done)
-  - [ ] Task card component
-  - [ ] Task detail view
-  - [ ] Task actions (approve, reject, request changes)
-  - [ ] Task comments
-  - [ ] Link to related entity record
+- ✅ **Tasks Page**
+  - [x] Tasks list page
+  - [x] Filter by status (open, in progress, done)
+  - [x] Task card component
+  - [x] Task detail view
+  - [x] Task actions (approve, reject, request changes)
+  - [x] Task comments
+  - [x] Link to related entity record
 
 **Phase 6 Deliverable**: Users can manage workflows and complete tasks
 

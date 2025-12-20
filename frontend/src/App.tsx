@@ -7,6 +7,7 @@ import { EntityDetailPage } from './metadata-ui/EntityDetailPage';
 import { EntityCreatePage } from './metadata-ui/EntityCreatePage';
 import { LoginPage } from './pages/LoginPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
+import { TasksPage } from './pages/TasksPage';
 import { EntityDefinitionsAdminPage } from './pages/EntityDefinitionsAdminPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -60,6 +61,14 @@ function App() {
           element={
             <ProtectedRoute>
               <SearchResultsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="tasks"
+          element={
+            <ProtectedRoute>
+              <TasksPage />
             </ProtectedRoute>
           }
         />

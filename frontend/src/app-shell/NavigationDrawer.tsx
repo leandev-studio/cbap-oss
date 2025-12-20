@@ -22,6 +22,7 @@ import {
   People,
   Security,
   Schema,
+  Assignment,
   ExpandLess,
   ExpandMore,
   ChevronLeft,
@@ -40,6 +41,7 @@ const iconMap: Record<string, React.ReactNode> = {
   People: <People />,
   Security: <Security />,
   Schema: <Schema />,
+  Assignment: <Assignment />,
 };
 
 /**

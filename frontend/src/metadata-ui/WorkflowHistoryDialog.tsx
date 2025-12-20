@@ -105,7 +105,7 @@ function WorkflowHistoryEntry({ entry }: { entry: WorkflowAuditLogEntry }) {
           {entry.transitionLabel}
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          by {entry.performedBy}
+          by {entry.performedByUsername || entry.performedBy}
         </Typography>
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
