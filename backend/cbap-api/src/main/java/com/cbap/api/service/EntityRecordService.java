@@ -262,7 +262,13 @@ public class EntityRecordService {
         record.setEntity(entity);
         record.setDataJson(request.getData());
         record.setSchemaVersion(entity.getSchemaVersion());
-        record.setState(request.getState());
+        // Set initial state if workflow is assigned, otherwise use provided state
+        if (entity.getWorkflowId() != null && !entity.getWorkflowId().isEmpty()) {
+            // State will be set to initial state on first workflow transition
+            record.setState(null);
+        } else {
+            record.setState(request.getState());
+        }
         record.setCreatedBy(user);
         record.setUpdatedBy(user);
 
@@ -308,7 +314,9 @@ public class EntityRecordService {
 
         // Update record
         record.setDataJson(request.getData());
-        if (request.getState() != null) {
+        // State should be managed through workflow transitions, not direct updates
+        // Only allow state updates if no workflow is assigned, or if explicitly allowed
+        if (request.getState() != null && (entity.getWorkflowId() == null || entity.getWorkflowId().isEmpty())) {
             record.setState(request.getState());
         }
         record.setUpdatedBy(user);

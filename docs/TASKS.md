@@ -257,53 +257,55 @@ Tasks are organized to:
 *Goal: Users can manage workflows and tasks*
 
 ### 6.1 Backend: Workflow Engine
-- ⬜ **Workflow Metadata**
-  - [ ] Workflow definition model (workflowId, states, transitions)
-  - [ ] State definition model
-  - [ ] Transition definition model (fromState, toState, conditions, actions)
-  - [ ] Workflow metadata service
-  - [ ] API: `GET /api/v1/metadata/workflows`
-  - [ ] API: `GET /api/v1/metadata/workflows/{workflowId}`
+- ✅ **Workflow Metadata**
+  - [x] Workflow definition model (workflowId, states, transitions)
+  - [x] State definition model
+  - [x] Transition definition model (fromState, toState, conditions, actions)
+  - [x] Workflow metadata service
+  - [x] API: `GET /api/v1/metadata/workflows`
+  - [x] API: `GET /api/v1/metadata/workflows/{workflowId}`
 
-- ⬜ **Workflow Runtime**
-  - [ ] Workflow state tracking (on entity records)
-  - [ ] Transition execution service
-  - [ ] Transition validation (conditions)
-  - [ ] Pre-transition rule evaluation
-  - [ ] State change persistence
-  - [ ] Workflow audit logging
-  - [ ] API: `POST /api/v1/entities/{entityId}/records/{recordId}/transitions/{transitionId}`
+- ✅ **Workflow Runtime**
+  - [x] Workflow state tracking (on entity records)
+  - [x] Transition execution service
+  - [x] Transition validation (conditions) - basic validation implemented, rule engine TODO
+  - [x] Pre-transition rule evaluation - structure in place, rule engine TODO
+  - [x] State change persistence
+  - [x] Workflow audit logging
+  - [x] API: `POST /api/v1/entities/{entityId}/records/{recordId}/transitions/{transitionId}`
+  - [x] API: `GET /api/v1/entities/{entityId}/records/{recordId}/transitions` (available transitions)
+  - [x] API: `GET /api/v1/entities/{entityId}/records/{recordId}/workflow-audit` (audit log)
 
 ### 6.2 Backend: Task System
-- ⬜ **Task Management**
-  - [ ] Task model (taskId, entityId, recordId, assignee, status, dueDate)
-  - [ ] Task repository
-  - [ ] Task service (create, update, complete)
-  - [ ] Task assignment on workflow transitions
-  - [ ] API: `GET /api/v1/tasks` (user's tasks)
-  - [ ] API: `GET /api/v1/tasks/{taskId}`
-  - [ ] API: `POST /api/v1/tasks/{taskId}/complete`
-  - [ ] API: `POST /api/v1/tasks/{taskId}/decisions` (approve/reject/request-changes)
+- ✅ **Task Management**
+  - [x] Task model (taskId, entityId, recordId, assignee, status, dueDate)
+  - [x] Task repository
+  - [x] Task service (create, update, complete)
+  - [x] Task assignment on workflow transitions (via transition metadata)
+  - [x] API: `GET /api/v1/tasks` (user's tasks)
+  - [x] API: `GET /api/v1/tasks/{taskId}`
+  - [x] API: `POST /api/v1/tasks/{taskId}/complete`
+  - [x] API: `POST /api/v1/tasks/{taskId}/decisions` (approve/reject/request-changes)
 
 ### 6.3 Frontend: Workflow UI
-- ⬜ **Workflow Action Bar**
-  - [ ] Workflow action bar component (on detail view)
-  - [ ] Display current state
-  - [ ] Show available transitions (from metadata)
-  - [ ] Transition buttons
-  - [ ] Transition confirmation dialogs
-  - [ ] Transition comments/notes
-  - [ ] State history display
+- ✅ **Workflow Action Bar**
+  - [x] Workflow action bar component (on detail view)
+  - [x] Display current state
+  - [x] Show available transitions (from metadata)
+  - [x] Transition buttons
+  - [x] Transition confirmation dialogs
+  - [x] Transition comments/notes
+  - [x] State history display
 
 ### 6.4 Frontend: Tasks UI
-- ⬜ **Tasks Page**
-  - [ ] Tasks list page
-  - [ ] Filter by status (open, in progress, done)
-  - [ ] Task card component
-  - [ ] Task detail view
-  - [ ] Task actions (approve, reject, request changes)
-  - [ ] Task comments
-  - [ ] Link to related entity record
+- ✅ **Tasks Page**
+  - [x] Tasks list page
+  - [x] Filter by status (open, in progress, done)
+  - [x] Task card component
+  - [x] Task detail view
+  - [x] Task actions (approve, reject, request changes)
+  - [x] Task comments
+  - [x] Link to related entity record
 
 **Phase 6 Deliverable**: Users can manage workflows and complete tasks
 
