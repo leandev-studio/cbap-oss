@@ -257,22 +257,24 @@ Tasks are organized to:
 *Goal: Users can manage workflows and tasks*
 
 ### 6.1 Backend: Workflow Engine
-- ⬜ **Workflow Metadata**
-  - [ ] Workflow definition model (workflowId, states, transitions)
-  - [ ] State definition model
-  - [ ] Transition definition model (fromState, toState, conditions, actions)
-  - [ ] Workflow metadata service
-  - [ ] API: `GET /api/v1/metadata/workflows`
-  - [ ] API: `GET /api/v1/metadata/workflows/{workflowId}`
+- ✅ **Workflow Metadata**
+  - [x] Workflow definition model (workflowId, states, transitions)
+  - [x] State definition model
+  - [x] Transition definition model (fromState, toState, conditions, actions)
+  - [x] Workflow metadata service
+  - [x] API: `GET /api/v1/metadata/workflows`
+  - [x] API: `GET /api/v1/metadata/workflows/{workflowId}`
 
-- ⬜ **Workflow Runtime**
-  - [ ] Workflow state tracking (on entity records)
-  - [ ] Transition execution service
-  - [ ] Transition validation (conditions)
-  - [ ] Pre-transition rule evaluation
-  - [ ] State change persistence
-  - [ ] Workflow audit logging
-  - [ ] API: `POST /api/v1/entities/{entityId}/records/{recordId}/transitions/{transitionId}`
+- ✅ **Workflow Runtime**
+  - [x] Workflow state tracking (on entity records)
+  - [x] Transition execution service
+  - [x] Transition validation (conditions) - basic validation implemented, rule engine TODO
+  - [x] Pre-transition rule evaluation - structure in place, rule engine TODO
+  - [x] State change persistence
+  - [x] Workflow audit logging
+  - [x] API: `POST /api/v1/entities/{entityId}/records/{recordId}/transitions/{transitionId}`
+  - [x] API: `GET /api/v1/entities/{entityId}/records/{recordId}/transitions` (available transitions)
+  - [x] API: `GET /api/v1/entities/{entityId}/records/{recordId}/workflow-audit` (audit log)
 
 ### 6.2 Backend: Task System
 - ⬜ **Task Management**
