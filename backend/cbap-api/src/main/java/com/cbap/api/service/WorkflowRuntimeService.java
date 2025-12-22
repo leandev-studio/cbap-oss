@@ -32,6 +32,7 @@ public class WorkflowRuntimeService {
     private final WorkflowAuditLogRepository workflowAuditLogRepository;
     private final UserRepository userRepository;
     private final com.cbap.persistence.repository.TaskRepository taskRepository;
+    private final ValidationService validationService;
 
     public WorkflowRuntimeService(
             EntityDefinitionRepository entityDefinitionRepository,
@@ -41,7 +42,8 @@ public class WorkflowRuntimeService {
             WorkflowTransitionRepository workflowTransitionRepository,
             WorkflowAuditLogRepository workflowAuditLogRepository,
             UserRepository userRepository,
-            com.cbap.persistence.repository.TaskRepository taskRepository) {
+            com.cbap.persistence.repository.TaskRepository taskRepository,
+            ValidationService validationService) {
         this.entityDefinitionRepository = entityDefinitionRepository;
         this.entityRecordRepository = entityRecordRepository;
         this.workflowDefinitionRepository = workflowDefinitionRepository;
@@ -50,6 +52,7 @@ public class WorkflowRuntimeService {
         this.workflowAuditLogRepository = workflowAuditLogRepository;
         this.userRepository = userRepository;
         this.taskRepository = taskRepository;
+        this.validationService = validationService;
     }
 
     /**
@@ -135,6 +138,21 @@ public class WorkflowRuntimeService {
             // TODO: Evaluate conditions against record data
             // For now, we'll skip condition evaluation - it should be implemented with a rule engine
             logger.debug("Transition has conditions: {}", transition.getConditionsJson());
+        }
+
+        // Validate workflow transition rules (before state change)
+        Map<String, Object> recordData = record.getDataJson() != null ? record.getDataJson() : new HashMap<>();
+        List<ValidationService.ValidationError> validationErrors = validationService.validateRecord(
+                entityId, recordData, "TRANSITION", null);
+        if (!validationErrors.isEmpty()) {
+            StringBuilder errorMessage = new StringBuilder("Validation failed: ");
+            for (ValidationService.ValidationError error : validationErrors) {
+                if (error.getPropertyName() != null) {
+                    errorMessage.append(error.getPropertyName()).append(": ");
+                }
+                errorMessage.append(error.getMessage()).append("; ");
+            }
+            throw new IllegalStateException(errorMessage.toString());
         }
 
         // Evaluate pre-transition rules (if any)

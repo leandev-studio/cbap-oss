@@ -5,6 +5,7 @@ interface FormSelectFieldProps {
   property: PropertyDefinition;
   value: string | number | null;
   onChange: (value: string | number | null) => void;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
   [key: string]: any; // Allow additional TextField props
@@ -17,6 +18,7 @@ export function FormSelectField({
   property,
   value,
   onChange,
+  onBlur,
   error,
   helperText,
   ...textFieldProps
@@ -43,6 +45,7 @@ export function FormSelectField({
       select
       value={value === null ? '' : value}
       onChange={handleChange}
+      onBlur={onBlur}
       required={property.required}
       disabled={property.readOnly}
       error={error}

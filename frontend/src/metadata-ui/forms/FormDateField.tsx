@@ -5,6 +5,7 @@ interface FormDateFieldProps {
   property: PropertyDefinition;
   value: string | null;
   onChange: (value: string | null) => void;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
   [key: string]: any; // Allow additional TextField props
@@ -17,6 +18,7 @@ export function FormDateField({
   property,
   value,
   onChange,
+  onBlur,
   error,
   helperText,
   ...textFieldProps
@@ -59,6 +61,7 @@ export function FormDateField({
       type="date"
       value={formatDateForInput(value)}
       onChange={handleChange}
+      onBlur={onBlur}
       required={property.required}
       disabled={property.readOnly}
       error={error}

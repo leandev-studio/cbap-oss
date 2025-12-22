@@ -9,9 +9,10 @@ import {
   CircularProgress,
   Divider,
 } from '@mui/material';
-import { Save, Cancel } from '@mui/icons-material';
+import { Save, Cancel, ErrorOutline } from '@mui/icons-material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useCallback, useRef } from 'react';
 import { EntityDefinition } from '../shared/services/entityMetadataService';
 import {
   EntityRecord,
@@ -20,6 +21,7 @@ import {
   CreateRecordRequest,
   UpdateRecordRequest,
 } from '../shared/services/entityRecordService';
+import { validateRecord, validateField, ValidationError } from '../shared/services/validationService';
 import { FormField } from './forms/FormField';
 
 interface EntityFormProps {
@@ -49,6 +51,7 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serverValidationErrors, setServerValidationErrors] = useState<ValidationError[]>([]);
 
   // Update form data when record changes
   useEffect(() => {
@@ -58,6 +61,7 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       setFormData({});
     }
     setErrors({});
+    setServerValidationErrors([]);
   }, [record]);
 
   // Validate form
@@ -127,6 +131,10 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       // Navigate to detail page
       navigate(`/entities/${entityDefinition.entityId}/records/${data.recordId}`);
     },
+    onError: (error: any) => {
+      // Parse server validation errors from response
+      parseServerValidationErrors(error);
+    },
   });
 
   // Update mutation
@@ -141,13 +149,110 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       // Navigate to detail page
       navigate(`/entities/${entityDefinition.entityId}/records/${data.recordId}`);
     },
+    onError: (error: any) => {
+      // Parse server validation errors from response
+      parseServerValidationErrors(error);
+    },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /**
+   * Parse server validation errors from API error response.
+   */
+  const parseServerValidationErrors = (error: any) => {
+    const fieldErrors: Record<string, string> = {};
+    const entityLevelErrors: string[] = [];
+
+    // Check if error response contains validation errors
+    if (error?.response?.data?.message) {
+      const errorMessage = error.response.data.message;
+      
+      // Try to parse validation errors from message
+      // Format: "Validation failed: propertyName: message; propertyName2: message2; ..."
+      if (errorMessage.includes('Validation failed:')) {
+        const validationPart = errorMessage.split('Validation failed:')[1];
+        if (validationPart) {
+          const errorParts = validationPart.split(';').filter((part: string) => part.trim());
+          
+          errorParts.forEach((part: string) => {
+            const trimmed = part.trim();
+            if (trimmed.includes(':')) {
+              const [propertyName, ...messageParts] = trimmed.split(':');
+              const message = messageParts.join(':').trim();
+              if (propertyName && message) {
+                fieldErrors[propertyName.trim()] = message;
+              } else {
+                entityLevelErrors.push(trimmed);
+              }
+            } else {
+              entityLevelErrors.push(trimmed);
+            }
+          });
+        }
+      } else {
+        // General error message
+        entityLevelErrors.push(errorMessage);
+      }
+    } else if (error?.message) {
+      entityLevelErrors.push(error.message);
+    } else {
+      entityLevelErrors.push('An error occurred while saving');
+    }
+
+    setErrors(fieldErrors);
+    // Note: entity-level errors are stored in serverValidationErrors, not separately
+    setServerValidationErrors([]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Clear previous errors
+    setErrors({});
+    setServerValidationErrors([]);
+
+    // Client-side validation
     if (!validate()) {
       return;
+    }
+
+    // Pre-submit server validation (entity-level and cross-entity rules only)
+    // Field-level rules are already validated in real-time
+    try {
+      const previousData = record ? { ...record.data } : undefined;
+      const validationResponse = await validateRecord(entityDefinition.entityId, {
+        data: formData,
+        previousData,
+        triggerEvent: isEditMode ? 'UPDATE' : 'CREATE',
+      });
+
+      if (!validationResponse.valid && validationResponse.errors.length > 0) {
+        // Process validation errors
+        const fieldErrors: Record<string, string> = {};
+        const entityLevelErrors: ValidationError[] = [];
+
+        validationResponse.errors.forEach((error) => {
+          // Only process entity-level and cross-entity errors here
+          // Field-level errors should have been caught in real-time validation
+          if (error.level === 'ENTITY' || error.level === 'CROSS_ENTITY') {
+            entityLevelErrors.push(error);
+          } else if (error.level === 'FIELD' && error.propertyName) {
+            // Still include field-level errors from server (in case real-time validation missed something)
+            fieldErrors[error.propertyName] = error.message;
+          }
+        });
+
+        // Update errors
+        setErrors((prev) => ({ ...prev, ...fieldErrors }));
+        setServerValidationErrors(validationResponse.errors);
+        
+        // Don't submit if there are entity-level errors
+        if (entityLevelErrors.length > 0) {
+          return;
+        }
+      }
+    } catch (validationError) {
+      // If validation API fails, still try to submit (server will validate)
+      console.warn('Pre-submit validation failed:', validationError);
     }
 
     const request: CreateRecordRequest | UpdateRecordRequest = {
@@ -161,12 +266,15 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
     }
   };
 
+  // Debounce timer for field validation
+  const validationTimers = useRef<Record<string, NodeJS.Timeout>>({});
+
   const handleFieldChange = (propertyName: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [propertyName]: value,
     }));
-    // Clear error for this field
+    // Clear error for this field (both client and server errors)
     if (errors[propertyName]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
@@ -174,7 +282,74 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
         return newErrors;
       });
     }
+    // Clear server validation errors for this field
+    setServerValidationErrors((prev) => 
+      prev.filter(e => !(e.propertyName === propertyName && e.level === 'FIELD'))
+    );
   };
+
+  /**
+   * Validate a single field in real-time (field-level rules only).
+   * Called on blur or after a short debounce on change.
+   */
+  const validateFieldInRealTime = useCallback(async (propertyName: string, value: any) => {
+    // Clear any existing timer for this field
+    if (validationTimers.current[propertyName]) {
+      clearTimeout(validationTimers.current[propertyName]);
+    }
+
+    // Debounce validation to avoid too many API calls
+    validationTimers.current[propertyName] = setTimeout(async () => {
+      try {
+        const validationResponse = await validateField(entityDefinition.entityId, propertyName, {
+          value,
+          fullRecordData: formData,
+        });
+
+        // Only process field-level errors (not entity-level)
+        const fieldErrors = validationResponse.errors.filter(e => e.level === 'FIELD');
+        
+        if (fieldErrors.length > 0) {
+          // Update errors for this field
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            // Use the first field-level error message
+            const firstError = fieldErrors[0];
+            if (firstError) {
+              newErrors[propertyName] = firstError.message;
+            }
+            return newErrors;
+          });
+        } else {
+          // Clear error if validation passes
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors[propertyName];
+            return newErrors;
+          });
+        }
+      } catch (error) {
+        // Silently fail - don't show errors for validation API failures
+        console.warn('Field validation failed:', error);
+      }
+    }, 300); // 300ms debounce
+  }, [entityDefinition.entityId, formData]);
+
+  /**
+   * Handle field blur - validate field-level rules in real-time.
+   */
+  const handleFieldBlur = useCallback((propertyName: string) => {
+    const value = formData[propertyName];
+    // Clear any pending debounced validation
+    if (validationTimers.current[propertyName]) {
+      clearTimeout(validationTimers.current[propertyName]);
+      delete validationTimers.current[propertyName];
+    }
+    // Validate immediately on blur
+    if (value !== undefined) {
+      validateFieldInRealTime(propertyName, value);
+    }
+  }, [formData, validateFieldInRealTime]);
 
   const handleCancel = () => {
     if (onCancel) {
@@ -196,10 +371,32 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
-      {/* Error Alert */}
-      {error && (
+      {/* Server Error Alert */}
+      {error && serverValidationErrors.filter(e => e.level !== 'FIELD').length === 0 && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error instanceof Error ? error.message : 'An error occurred while saving'}
+        </Alert>
+      )}
+
+      {/* Validation Error Summary */}
+      {serverValidationErrors.filter(e => e.level !== 'FIELD').length > 0 && (
+        <Alert 
+          severity="error" 
+          icon={<ErrorOutline />}
+          sx={{ mb: 2 }}
+        >
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            Validation Errors ({serverValidationErrors.filter(e => e.level !== 'FIELD').length} error{serverValidationErrors.filter(e => e.level !== 'FIELD').length !== 1 ? 's' : ''})
+          </Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2 }}>
+            {serverValidationErrors
+              .filter(e => e.level !== 'FIELD')
+              .map((err) => (
+                <li key={err.validationId}>
+                  <Typography variant="body2">{err.message}</Typography>
+                </li>
+              ))}
+          </Box>
         </Alert>
       )}
 
@@ -239,8 +436,12 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
                       property={property}
                       value={formData[property.propertyName]}
                       onChange={(value) => handleFieldChange(property.propertyName, value)}
+                      onBlur={() => handleFieldBlur(property.propertyName)}
                       error={!!errors[property.propertyName]}
-                      helperText={errors[property.propertyName]}
+                      helperText={errors[property.propertyName] || 
+                        serverValidationErrors
+                          .find(e => e.propertyName === property.propertyName && e.level === 'FIELD')
+                          ?.message}
                     />
                   </Grid>
                 ))}
@@ -254,8 +455,12 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
                       property={property}
                       value={formData[property.propertyName]}
                       onChange={(value) => handleFieldChange(property.propertyName, value)}
+                      onBlur={() => handleFieldBlur(property.propertyName)}
                       error={!!errors[property.propertyName]}
-                      helperText={errors[property.propertyName]}
+                      helperText={errors[property.propertyName] || 
+                        serverValidationErrors
+                          .find(e => e.propertyName === property.propertyName && e.level === 'FIELD')
+                          ?.message}
                     />
                   </Grid>
                 ))}

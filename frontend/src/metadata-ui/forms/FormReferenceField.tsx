@@ -14,6 +14,7 @@ interface FormReferenceFieldProps {
   property: PropertyDefinition;
   value: string | null;
   onChange: (value: string | null) => void;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
 }
@@ -27,6 +28,7 @@ export function FormReferenceField({
   property,
   value,
   onChange,
+  onBlur,
   error,
   helperText,
 }: FormReferenceFieldProps) {
@@ -81,6 +83,7 @@ export function FormReferenceField({
         onChange={(_, newValue) => {
           onChange(newValue?.id || null);
         }}
+        onBlur={onBlur}
         inputValue={inputValue}
         onInputChange={(_, newInputValue) => {
           setInputValue(newInputValue);

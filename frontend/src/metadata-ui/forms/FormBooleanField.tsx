@@ -5,6 +5,7 @@ interface FormBooleanFieldProps {
   property: PropertyDefinition;
   value: boolean | null;
   onChange: (value: boolean) => void;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
 }
@@ -16,6 +17,7 @@ export function FormBooleanField({
   property,
   value,
   onChange,
+  onBlur,
   error,
   helperText,
 }: FormBooleanFieldProps) {
@@ -26,6 +28,7 @@ export function FormBooleanField({
           <Switch
             checked={value === true}
             onChange={(e) => onChange(e.target.checked)}
+            onBlur={onBlur}
             disabled={property.readOnly}
           />
         }

@@ -23,6 +23,7 @@ interface MasterDetailFormProps {
   property: PropertyDefinition;
   value: any[] | null;
   onChange: (value: any[]) => void;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
 }
