@@ -33,16 +33,19 @@ public class EntityRecordService {
     private final EntityDefinitionRepository entityDefinitionRepository;
     private final UserRepository userRepository;
     private final com.cbap.search.service.SearchIndexingService searchIndexingService;
+    private final ValidationService validationService;
 
     public EntityRecordService(
             EntityRecordRepository entityRecordRepository,
             EntityDefinitionRepository entityDefinitionRepository,
             UserRepository userRepository,
-            com.cbap.search.service.SearchIndexingService searchIndexingService) {
+            com.cbap.search.service.SearchIndexingService searchIndexingService,
+            ValidationService validationService) {
         this.entityRecordRepository = entityRecordRepository;
         this.entityDefinitionRepository = entityDefinitionRepository;
         this.userRepository = userRepository;
         this.searchIndexingService = searchIndexingService;
+        this.validationService = validationService;
     }
 
     /**
@@ -256,6 +259,20 @@ public class EntityRecordService {
 
         // Validate data against entity definition
         validateRecordData(entity, request.getData(), true);
+        
+        // Validate using validation rules
+        List<ValidationService.ValidationError> validationErrors = validationService.validateRecord(
+                entityId, request.getData(), "CREATE", null);
+        if (!validationErrors.isEmpty()) {
+            StringBuilder errorMessage = new StringBuilder("Validation failed: ");
+            for (ValidationService.ValidationError error : validationErrors) {
+                if (error.getPropertyName() != null) {
+                    errorMessage.append(error.getPropertyName()).append(": ");
+                }
+                errorMessage.append(error.getMessage()).append("; ");
+            }
+            throw new IllegalArgumentException(errorMessage.toString());
+        }
 
         // Create record
         EntityRecord record = new EntityRecord();
@@ -300,7 +317,7 @@ public class EntityRecordService {
                 .orElseThrow(() -> new IllegalArgumentException("Entity not found: " + entityId));
 
         // Get record
-        EntityRecord record = entityRecordRepository.findByEntityIdAndRecordId(entityId, recordId)
+        EntityRecord existingRecord = entityRecordRepository.findByEntityIdAndRecordId(entityId, recordId)
                 .orElseThrow(() -> new IllegalArgumentException("Record not found: " + recordId));
 
         // Get current user
@@ -309,19 +326,37 @@ public class EntityRecordService {
         // TODO: Authorization check - verify user has ENTITY_UPDATE permission for this entity
         // For now, just require authentication
 
+        // Get previous record data for validation context
+        Map<String, Object> previousData = existingRecord.getDataJson() != null ? 
+                new HashMap<>(existingRecord.getDataJson()) : new HashMap<>();
+
         // Validate data against entity definition
         validateRecordData(entity, request.getData(), false);
+        
+        // Validate using validation rules
+        List<ValidationService.ValidationError> validationErrors = validationService.validateRecord(
+                entityId, request.getData(), "UPDATE", previousData);
+        if (!validationErrors.isEmpty()) {
+            StringBuilder errorMessage = new StringBuilder("Validation failed: ");
+            for (ValidationService.ValidationError error : validationErrors) {
+                if (error.getPropertyName() != null) {
+                    errorMessage.append(error.getPropertyName()).append(": ");
+                }
+                errorMessage.append(error.getMessage()).append("; ");
+            }
+            throw new IllegalArgumentException(errorMessage.toString());
+        }
 
         // Update record
-        record.setDataJson(request.getData());
+        existingRecord.setDataJson(request.getData());
         // State should be managed through workflow transitions, not direct updates
         // Only allow state updates if no workflow is assigned, or if explicitly allowed
         if (request.getState() != null && (entity.getWorkflowId() == null || entity.getWorkflowId().isEmpty())) {
-            record.setState(request.getState());
+            existingRecord.setState(request.getState());
         }
-        record.setUpdatedBy(user);
+        existingRecord.setUpdatedBy(user);
 
-        record = entityRecordRepository.save(record);
+        EntityRecord record = entityRecordRepository.save(existingRecord);
 
         // Re-index in OpenSearch (async, non-blocking)
         try {
