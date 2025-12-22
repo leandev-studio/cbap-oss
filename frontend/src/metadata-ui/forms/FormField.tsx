@@ -13,6 +13,7 @@ interface FormFieldProps {
   property: PropertyDefinition;
   value: any;
   onChange: (value: any) => void;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
 }
@@ -22,7 +23,7 @@ interface FormFieldProps {
  * 
  * Renders the appropriate form field component based on property type.
  */
-export function FormField({ property, value, onChange, error, helperText }: FormFieldProps) {
+export function FormField({ property, value, onChange, onBlur, error, helperText }: FormFieldProps) {
   // Calculated fields are read-only display
   if (property.propertyType === 'calculated') {
     return (
@@ -52,6 +53,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
         property={property}
         value={Array.isArray(value) ? value : null}
         onChange={onChange}
+        onBlur={onBlur}
         error={error}
         helperText={helperText}
       />
@@ -66,6 +68,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value || ''}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />
@@ -77,6 +80,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value ?? null}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />
@@ -88,6 +92,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value || null}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />
@@ -99,6 +104,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value ?? null}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />
@@ -110,6 +116,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value ?? null}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />
@@ -121,6 +128,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value ?? null}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />
@@ -132,6 +140,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value || null}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />
@@ -144,6 +153,7 @@ export function FormField({ property, value, onChange, error, helperText }: Form
           property={property}
           value={value || ''}
           onChange={onChange}
+          onBlur={onBlur}
           error={error}
           helperText={helperText}
         />

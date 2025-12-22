@@ -17,6 +17,7 @@ interface FormMultiSelectFieldProps {
   property: PropertyDefinition;
   value: (string | number)[] | null;
   onChange: (value: (string | number)[]) => void;
+  onBlur?: () => void;
   error?: boolean;
   helperText?: string;
 }
@@ -30,6 +31,7 @@ export function FormMultiSelectField({
   property,
   value,
   onChange,
+  onBlur,
   error,
   helperText,
 }: FormMultiSelectFieldProps) {
@@ -88,6 +90,7 @@ export function FormMultiSelectField({
         multiple
         value={value || []}
         onChange={handleChange}
+        onBlur={onBlur}
         input={<OutlinedInput label={property.label || property.propertyName} />}
         disabled={isLoading || property.readOnly}
         renderValue={(selected) => (

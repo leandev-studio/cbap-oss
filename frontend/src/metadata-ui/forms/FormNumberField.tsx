@@ -17,6 +17,7 @@ export function FormNumberField({
   property,
   value,
   onChange,
+  onBlur,
   error,
   helperText,
   ...textFieldProps
@@ -41,6 +42,7 @@ export function FormNumberField({
       type="number"
       value={value === null ? '' : value}
       onChange={handleChange}
+      onBlur={onBlur}
       required={property.required}
       disabled={property.readOnly}
       error={error}

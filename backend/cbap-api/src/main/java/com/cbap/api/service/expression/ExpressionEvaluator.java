@@ -143,7 +143,6 @@ public class ExpressionEvaluator {
         // Handle logical operators (simple cases)
         if (expression.contains("&&")) {
             String[] parts = expression.split("&&");
-            boolean result = true;
             for (String part : parts) {
                 Object partResult = evaluateExpression(part.trim(), context);
                 if (partResult instanceof Boolean && !(Boolean) partResult) {
@@ -210,8 +209,78 @@ public class ExpressionEvaluator {
             return left / right;
         }
         
+        // Handle function calls (e.g., sum(array.field))
+        if (expression.contains("(") && expression.contains(")")) {
+            int openParen = expression.indexOf("(");
+            int closeParen = expression.lastIndexOf(")");
+            if (openParen < closeParen) {
+                String functionName = expression.substring(0, openParen).trim();
+                String argsStr = expression.substring(openParen + 1, closeParen).trim();
+                
+                // Handle sum() function for arrays
+                if ("sum".equals(functionName)) {
+                    return evaluateSumFunction(argsStr, context);
+                }
+            }
+        }
+        
         // Handle simple value
         return evaluateSimpleValue(expression, context);
+    }
+
+    /**
+     * Evaluate sum() function: sum(array.field) or sum(array)
+     * Example: sum(lineItems.total) sums the 'total' field of each item in lineItems array
+     */
+    private static Object evaluateSumFunction(String argsStr, Map<String, Object> context) throws ExpressionEvaluationException {
+        if (argsStr.contains(".")) {
+            // sum(array.field) - sum a specific field from array items
+            String[] parts = argsStr.split("\\.", 2);
+            String arrayName = parts[0].trim();
+            String fieldName = parts[1].trim();
+            
+            Object arrayObj = evaluateSimpleValue(arrayName, context);
+            if (!(arrayObj instanceof java.util.List)) {
+                throw new ExpressionEvaluationException("sum() expects an array, got: " + arrayObj);
+            }
+            
+            @SuppressWarnings("unchecked")
+            java.util.List<Object> array = (java.util.List<Object>) arrayObj;
+            double sum = 0.0;
+            
+            for (Object item : array) {
+                if (item instanceof Map) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> itemMap = (Map<String, Object>) item;
+                    Object fieldValue = itemMap.get(fieldName);
+                    Double numValue = toNumber(fieldValue);
+                    if (numValue != null) {
+                        sum += numValue;
+                    }
+                }
+            }
+            
+            return sum;
+        } else {
+            // sum(array) - sum array values directly
+            Object arrayObj = evaluateSimpleValue(argsStr, context);
+            if (!(arrayObj instanceof java.util.List)) {
+                throw new ExpressionEvaluationException("sum() expects an array, got: " + arrayObj);
+            }
+            
+            @SuppressWarnings("unchecked")
+            java.util.List<Object> array = (java.util.List<Object>) arrayObj;
+            double sum = 0.0;
+            
+            for (Object item : array) {
+                Double numValue = toNumber(item);
+                if (numValue != null) {
+                    sum += numValue;
+                }
+            }
+            
+            return sum;
+        }
     }
 
     private static Object evaluateSimpleValue(String value, Map<String, Object> context) {

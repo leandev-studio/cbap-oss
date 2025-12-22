@@ -12,6 +12,7 @@ import {
 import { Save, Cancel, ErrorOutline } from '@mui/icons-material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { useCallback, useRef } from 'react';
 import { EntityDefinition } from '../shared/services/entityMetadataService';
 import {
   EntityRecord,
@@ -20,7 +21,7 @@ import {
   CreateRecordRequest,
   UpdateRecordRequest,
 } from '../shared/services/entityRecordService';
-import { validateRecord, ValidationError } from '../shared/services/validationService';
+import { validateRecord, validateField, ValidationError } from '../shared/services/validationService';
 import { FormField } from './forms/FormField';
 
 interface EntityFormProps {
@@ -50,7 +51,6 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [entityErrors, setEntityErrors] = useState<string[]>([]);
   const [serverValidationErrors, setServerValidationErrors] = useState<ValidationError[]>([]);
 
   // Update form data when record changes
@@ -61,7 +61,6 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       setFormData({});
     }
     setErrors({});
-    setEntityErrors([]);
     setServerValidationErrors([]);
   }, [record]);
 
@@ -200,7 +199,8 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
     }
 
     setErrors(fieldErrors);
-    setEntityErrors(entityLevelErrors);
+    // Note: entity-level errors are stored in serverValidationErrors, not separately
+    setServerValidationErrors([]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -208,7 +208,6 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
 
     // Clear previous errors
     setErrors({});
-    setEntityErrors([]);
     setServerValidationErrors([]);
 
     // Client-side validation
@@ -216,7 +215,8 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       return;
     }
 
-    // Pre-submit server validation
+    // Pre-submit server validation (entity-level and cross-entity rules only)
+    // Field-level rules are already validated in real-time
     try {
       const previousData = record ? { ...record.data } : undefined;
       const validationResponse = await validateRecord(entityDefinition.entityId, {
@@ -228,20 +228,27 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       if (!validationResponse.valid && validationResponse.errors.length > 0) {
         // Process validation errors
         const fieldErrors: Record<string, string> = {};
-        const entityLevelErrors: string[] = [];
+        const entityLevelErrors: ValidationError[] = [];
 
         validationResponse.errors.forEach((error) => {
-          if (error.level === 'FIELD' && error.propertyName) {
+          // Only process entity-level and cross-entity errors here
+          // Field-level errors should have been caught in real-time validation
+          if (error.level === 'ENTITY' || error.level === 'CROSS_ENTITY') {
+            entityLevelErrors.push(error);
+          } else if (error.level === 'FIELD' && error.propertyName) {
+            // Still include field-level errors from server (in case real-time validation missed something)
             fieldErrors[error.propertyName] = error.message;
-          } else if (error.level === 'ENTITY' || error.level === 'CROSS_ENTITY') {
-            entityLevelErrors.push(error.message);
           }
         });
 
-        setErrors(fieldErrors);
-        setEntityErrors(entityLevelErrors);
+        // Update errors
+        setErrors((prev) => ({ ...prev, ...fieldErrors }));
         setServerValidationErrors(validationResponse.errors);
-        return; // Don't submit if validation fails
+        
+        // Don't submit if there are entity-level errors
+        if (entityLevelErrors.length > 0) {
+          return;
+        }
       }
     } catch (validationError) {
       // If validation API fails, still try to submit (server will validate)
@@ -258,6 +265,9 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       createMutation.mutate(request);
     }
   };
+
+  // Debounce timer for field validation
+  const validationTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   const handleFieldChange = (propertyName: string, value: any) => {
     setFormData((prev) => ({
@@ -277,6 +287,69 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
       prev.filter(e => !(e.propertyName === propertyName && e.level === 'FIELD'))
     );
   };
+
+  /**
+   * Validate a single field in real-time (field-level rules only).
+   * Called on blur or after a short debounce on change.
+   */
+  const validateFieldInRealTime = useCallback(async (propertyName: string, value: any) => {
+    // Clear any existing timer for this field
+    if (validationTimers.current[propertyName]) {
+      clearTimeout(validationTimers.current[propertyName]);
+    }
+
+    // Debounce validation to avoid too many API calls
+    validationTimers.current[propertyName] = setTimeout(async () => {
+      try {
+        const validationResponse = await validateField(entityDefinition.entityId, propertyName, {
+          value,
+          fullRecordData: formData,
+        });
+
+        // Only process field-level errors (not entity-level)
+        const fieldErrors = validationResponse.errors.filter(e => e.level === 'FIELD');
+        
+        if (fieldErrors.length > 0) {
+          // Update errors for this field
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            // Use the first field-level error message
+            const firstError = fieldErrors[0];
+            if (firstError) {
+              newErrors[propertyName] = firstError.message;
+            }
+            return newErrors;
+          });
+        } else {
+          // Clear error if validation passes
+          setErrors((prev) => {
+            const newErrors = { ...prev };
+            delete newErrors[propertyName];
+            return newErrors;
+          });
+        }
+      } catch (error) {
+        // Silently fail - don't show errors for validation API failures
+        console.warn('Field validation failed:', error);
+      }
+    }, 300); // 300ms debounce
+  }, [entityDefinition.entityId, formData]);
+
+  /**
+   * Handle field blur - validate field-level rules in real-time.
+   */
+  const handleFieldBlur = useCallback((propertyName: string) => {
+    const value = formData[propertyName];
+    // Clear any pending debounced validation
+    if (validationTimers.current[propertyName]) {
+      clearTimeout(validationTimers.current[propertyName]);
+      delete validationTimers.current[propertyName];
+    }
+    // Validate immediately on blur
+    if (value !== undefined) {
+      validateFieldInRealTime(propertyName, value);
+    }
+  }, [formData, validateFieldInRealTime]);
 
   const handleCancel = () => {
     if (onCancel) {
@@ -299,42 +372,31 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
   return (
     <Box component="form" onSubmit={handleSubmit}>
       {/* Server Error Alert */}
-      {error && entityErrors.length === 0 && (
+      {error && serverValidationErrors.filter(e => e.level !== 'FIELD').length === 0 && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error instanceof Error ? error.message : 'An error occurred while saving'}
         </Alert>
       )}
 
       {/* Validation Error Summary */}
-      {(entityErrors.length > 0 || serverValidationErrors.length > 0) && (
+      {serverValidationErrors.filter(e => e.level !== 'FIELD').length > 0 && (
         <Alert 
           severity="error" 
           icon={<ErrorOutline />}
           sx={{ mb: 2 }}
         >
           <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
-            Validation Errors ({entityErrors.length + serverValidationErrors.filter(e => e.level !== 'FIELD').length} error{entityErrors.length + serverValidationErrors.filter(e => e.level !== 'FIELD').length !== 1 ? 's' : ''})
+            Validation Errors ({serverValidationErrors.filter(e => e.level !== 'FIELD').length} error{serverValidationErrors.filter(e => e.level !== 'FIELD').length !== 1 ? 's' : ''})
           </Typography>
-          {entityErrors.length > 0 && (
-            <Box component="ul" sx={{ m: 0, pl: 2 }}>
-              {entityErrors.map((err, index) => (
-                <li key={index}>
-                  <Typography variant="body2">{err}</Typography>
+          <Box component="ul" sx={{ m: 0, pl: 2 }}>
+            {serverValidationErrors
+              .filter(e => e.level !== 'FIELD')
+              .map((err) => (
+                <li key={err.validationId}>
+                  <Typography variant="body2">{err.message}</Typography>
                 </li>
               ))}
-            </Box>
-          )}
-          {serverValidationErrors.filter(e => e.level !== 'FIELD').length > 0 && (
-            <Box component="ul" sx={{ m: entityErrors.length > 0 ? 1 : 0, pl: 2 }}>
-              {serverValidationErrors
-                .filter(e => e.level !== 'FIELD')
-                .map((err) => (
-                  <li key={err.validationId}>
-                    <Typography variant="body2">{err.message}</Typography>
-                  </li>
-                ))}
-            </Box>
-          )}
+          </Box>
         </Alert>
       )}
 
@@ -374,6 +436,7 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
                       property={property}
                       value={formData[property.propertyName]}
                       onChange={(value) => handleFieldChange(property.propertyName, value)}
+                      onBlur={() => handleFieldBlur(property.propertyName)}
                       error={!!errors[property.propertyName]}
                       helperText={errors[property.propertyName] || 
                         serverValidationErrors
@@ -392,6 +455,7 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
                       property={property}
                       value={formData[property.propertyName]}
                       onChange={(value) => handleFieldChange(property.propertyName, value)}
+                      onBlur={() => handleFieldBlur(property.propertyName)}
                       error={!!errors[property.propertyName]}
                       helperText={errors[property.propertyName] || 
                         serverValidationErrors

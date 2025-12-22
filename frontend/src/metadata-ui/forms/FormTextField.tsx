@@ -17,6 +17,7 @@ export function FormTextField({
   property,
   value,
   onChange,
+  onBlur,
   error,
   helperText,
   ...textFieldProps
@@ -28,6 +29,7 @@ export function FormTextField({
       label={property.label || property.propertyName}
       value={value || ''}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
       required={property.required}
       disabled={property.readOnly}
       error={error}
