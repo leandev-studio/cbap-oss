@@ -217,9 +217,23 @@ public class ExpressionEvaluator {
                 String functionName = expression.substring(0, openParen).trim();
                 String argsStr = expression.substring(openParen + 1, closeParen).trim();
                 
-                // Handle sum() function for arrays
+                // Handle aggregate functions for arrays
                 if ("sum".equals(functionName)) {
                     return evaluateSumFunction(argsStr, context);
+                }
+                if ("count".equals(functionName)) {
+                    return evaluateCountFunction(argsStr, context);
+                }
+                if ("exists".equals(functionName)) {
+                    return evaluateExistsFunction(argsStr, context);
+                }
+                
+                // Handle function calls from context (e.g., lookupCountryTax)
+                Object functionObj = context.get(functionName);
+                if (functionObj instanceof java.util.function.Function) {
+                    @SuppressWarnings("unchecked")
+                    java.util.function.Function<String, Object> func = (java.util.function.Function<String, Object>) functionObj;
+                    return func.apply(argsStr);
                 }
             }
         }
@@ -283,6 +297,36 @@ public class ExpressionEvaluator {
         }
     }
 
+    /**
+     * Evaluate count() function: count(array)
+     * Example: count(lineItems) returns the number of items in the array
+     */
+    private static Object evaluateCountFunction(String argsStr, Map<String, Object> context) throws ExpressionEvaluationException {
+        Object arrayObj = evaluateSimpleValue(argsStr, context);
+        if (!(arrayObj instanceof java.util.List)) {
+            throw new ExpressionEvaluationException("count() expects an array, got: " + arrayObj);
+        }
+        
+        @SuppressWarnings("unchecked")
+        java.util.List<Object> array = (java.util.List<Object>) arrayObj;
+        return (long) array.size();
+    }
+
+    /**
+     * Evaluate exists() function: exists(array)
+     * Example: exists(lineItems) returns true if array is not empty
+     */
+    private static Object evaluateExistsFunction(String argsStr, Map<String, Object> context) throws ExpressionEvaluationException {
+        Object arrayObj = evaluateSimpleValue(argsStr, context);
+        if (!(arrayObj instanceof java.util.List)) {
+            throw new ExpressionEvaluationException("exists() expects an array, got: " + arrayObj);
+        }
+        
+        @SuppressWarnings("unchecked")
+        java.util.List<Object> array = (java.util.List<Object>) arrayObj;
+        return !array.isEmpty();
+    }
+
     private static Object evaluateSimpleValue(String value, Map<String, Object> context) {
         // Remove quotes from strings
         if (value.startsWith("\"") && value.endsWith("\"")) {
@@ -292,15 +336,41 @@ public class ExpressionEvaluator {
             return value.substring(1, value.length() - 1);
         }
         
-        // Try as number
-        try {
-            if (value.contains(".")) {
-                return Double.parseDouble(value);
-            } else {
-                return Long.parseLong(value);
+        // Handle dot notation property access (e.g., $parent.customer, parent.customer)
+        if (value.contains(".") && context != null) {
+            String[] parts = value.split("\\.", 2);
+            String baseName = parts[0].trim();
+            String propertyName = parts[1].trim();
+            
+            Object baseObj = context.get(baseName);
+            if (baseObj == null && baseName.startsWith("$")) {
+                // Try without $ prefix
+                baseObj = context.get(baseName.substring(1));
             }
-        } catch (NumberFormatException e) {
-            // Not a number
+            
+            if (baseObj instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> map = (Map<String, Object>) baseObj;
+                return map.get(propertyName);
+            }
+            
+            // If not a map, might be a number with decimal point - try parsing as number
+            try {
+                return Double.parseDouble(value);
+            } catch (NumberFormatException e) {
+                // Not a number, continue
+            }
+        } else {
+            // Try as number (only if no dot notation)
+            try {
+                if (value.contains(".")) {
+                    return Double.parseDouble(value);
+                } else {
+                    return Long.parseLong(value);
+                }
+            } catch (NumberFormatException e) {
+                // Not a number
+            }
         }
         
         // Try as boolean
@@ -317,6 +387,10 @@ public class ExpressionEvaluator {
         // Try as context variable
         if (context != null && context.containsKey(value)) {
             return context.get(value);
+        }
+        // Try with $ prefix removed
+        if (context != null && value.startsWith("$") && context.containsKey(value.substring(1))) {
+            return context.get(value.substring(1));
         }
         
         // Return as string

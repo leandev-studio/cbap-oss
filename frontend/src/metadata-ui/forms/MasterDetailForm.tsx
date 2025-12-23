@@ -18,6 +18,7 @@ import { PropertyDefinition } from '../../shared/services/entityMetadataService'
 import { FormField } from './FormField';
 import { useQuery } from '@tanstack/react-query';
 import { getEntityById } from '../../shared/services/entityMetadataService';
+import { getRecord } from '../../shared/services/entityRecordService';
 
 interface MasterDetailFormProps {
   property: PropertyDefinition;
@@ -26,6 +27,7 @@ interface MasterDetailFormProps {
   onBlur?: () => void;
   error?: boolean;
   helperText?: string;
+  parentFormData?: Record<string, any>; // Parent form data (e.g., Order data for OrderLineItem)
 }
 
 /**
@@ -40,6 +42,7 @@ export function MasterDetailForm({
   onChange,
   error,
   helperText,
+  parentFormData: _parentFormData, // Reserved for future use (parent context for calculated fields)
 }: MasterDetailFormProps) {
   const detailEntityId = property.metadataJson?.detailEntityId as string | undefined;
   const minItems = property.metadataJson?.minItems as number | undefined;
@@ -52,7 +55,13 @@ export function MasterDetailForm({
   });
 
   const [lineItems, setLineItems] = useState<any[]>(() => {
-    return value && Array.isArray(value) ? [...value] : [];
+    const items = value && Array.isArray(value) ? [...value] : [];
+    // Initialize calculated fields if not present
+    return items.map(item => ({
+      ...item,
+      taxPercent: item.taxPercent ?? 0,
+      taxValue: item.taxValue ?? 0,
+    }));
   });
 
   // Track previous value to detect external changes
@@ -64,13 +73,22 @@ export function MasterDetailForm({
     const valueChanged = prevValueRef.current !== value;
     if (valueChanged) {
       if (value && Array.isArray(value)) {
-        setLineItems([...value]);
+        // Initialize calculated fields if not present
+        const items = value.map(item => ({
+          ...item,
+          taxPercent: item.taxPercent ?? 0,
+          taxValue: item.taxValue ?? 0,
+        }));
+        setLineItems(items);
       } else {
         setLineItems([]);
       }
       prevValueRef.current = value;
     }
   }, [value]);
+
+  // Note: Calculated fields are evaluated server-side based on metadata expressions
+  // No client-side recalculation is performed to maintain metadata-driven approach
 
   // Notify parent of changes - use a ref to avoid including onChange in deps
   const onChangeRef = useRef(onChange);
@@ -80,14 +98,17 @@ export function MasterDetailForm({
 
   // Only call onChange when lineItems actually changes (not on initial mount or when syncing from prop)
   const prevLineItemsRef = useRef(lineItems);
+  const isRecalculatingRef = useRef(false);
+  
   useEffect(() => {
     // Skip if this is the initial render or if lineItems hasn't actually changed
     const lineItemsChanged = JSON.stringify(prevLineItemsRef.current) !== JSON.stringify(lineItems);
-    if (lineItemsChanged && prevValueRef.current === value) {
+    if (lineItemsChanged && prevValueRef.current === value && !isRecalculatingRef.current) {
       // Only notify if the change came from user interaction, not from prop sync
       onChangeRef.current(lineItems);
       prevLineItemsRef.current = lineItems;
     }
+    isRecalculatingRef.current = false;
   }, [lineItems, value]);
 
   const handleAddLineItem = () => {
@@ -114,21 +135,46 @@ export function MasterDetailForm({
     setLineItems(newItems);
   };
 
-  const handleFieldChange = (index: number, fieldName: string, fieldValue: any) => {
+  const handleFieldChange = async (index: number, fieldName: string, fieldValue: any) => {
     const newItems = [...lineItems];
     newItems[index] = {
       ...newItems[index],
       [fieldName]: fieldValue,
     };
 
-    // Calculate total if unitPrice and quantity are present
-    if (fieldName === 'unitPrice' || fieldName === 'quantity') {
-      const unitPrice = fieldName === 'unitPrice' ? fieldValue : newItems[index].unitPrice;
-      const quantity = fieldName === 'quantity' ? fieldValue : newItems[index].quantity;
-      if (unitPrice !== null && quantity !== null && !isNaN(unitPrice) && !isNaN(quantity)) {
-        newItems[index].total = unitPrice * quantity;
+    // Auto-populate fields based on metadata (autoPopulateFrom, sourceField)
+    // This is metadata-driven, not hardcoded
+    if (detailEntityDefinition) {
+      const changedProperty = detailEntityDefinition.properties.find(p => p.propertyName === fieldName);
+      if (changedProperty?.metadataJson?.autoPopulateFrom && changedProperty.metadataJson.sourceField) {
+        const sourceField = changedProperty.metadataJson.sourceField as string;
+        const sourceEntity = changedProperty.referenceEntityId || changedProperty.metadataJson.autoPopulateFrom as string;
+        
+        // If this is a reference field that triggers auto-population
+        if (fieldValue && changedProperty.propertyType === 'reference') {
+          try {
+            const sourceRecord = await getRecord(sourceEntity, fieldValue);
+            const sourceValue = sourceRecord.data?.[sourceField];
+            if (sourceValue !== null && sourceValue !== undefined) {
+              // Find the target property that should be auto-populated based on metadata
+              const targetProperty = detailEntityDefinition.properties.find(
+                p => p.metadataJson?.autoPopulateFrom === fieldName && 
+                     p.metadataJson?.sourceField === sourceField
+              );
+              if (targetProperty) {
+                newItems[index][targetProperty.propertyName] = sourceValue;
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to auto-populate from ${sourceEntity}:`, error);
+          }
+        }
       }
     }
+
+    // Note: Calculated fields are computed server-side based on their metadata expressions
+    // Client-side calculation is not performed to avoid hardcoded business logic
+    // The backend will evaluate expressions when the record is saved
 
     setLineItems(newItems);
   };
@@ -156,23 +202,34 @@ export function MasterDetailForm({
     (p) => p.propertyType !== 'calculated' && !p.readOnly
   );
 
-  // Order properties: product, quantity, unitPrice, then total (calculated), then others
-  const propertyOrder = ['product', 'quantity', 'unitPrice', 'total'];
-  const editableProperties = [
-    ...propertyOrder
-      .map(key => allEditableProperties.find(p => p.propertyName === key))
-      .filter(Boolean) as PropertyDefinition[],
-    ...allEditableProperties.filter(p => !propertyOrder.includes(p.propertyName))
-  ];
+  // Get column order from metadata (detailView.columnOrder) - metadata-driven, not hardcoded
+  const detailViewConfig = property.metadataJson?.detailView as any;
+  const columnOrder = detailViewConfig?.columnOrder as string[] | undefined;
+  
+  // Order properties based on metadata columnOrder, or use natural order
+  const editableProperties = columnOrder && Array.isArray(columnOrder)
+    ? [
+        ...columnOrder
+          .map(key => allEditableProperties.find(p => p.propertyName === key))
+          .filter(Boolean) as PropertyDefinition[],
+        ...allEditableProperties.filter(p => !columnOrder.includes(p.propertyName))
+      ]
+    : allEditableProperties;
 
-  // Get calculated fields for display (total should be last)
+  // Get calculated fields for display - order based on metadata columnOrder
   const calculatedProperties = detailEntityDefinition.properties.filter(
     (p) => p.propertyType === 'calculated'
   );
-  // Ensure total is last in calculated fields
-  const totalCalc = calculatedProperties.find(p => p.propertyName === 'total');
-  const otherCalcs = calculatedProperties.filter(p => p.propertyName !== 'total');
-  const orderedCalculatedProperties = [...otherCalcs, ...(totalCalc ? [totalCalc] : [])];
+  
+  // Order calculated properties based on metadata columnOrder
+  const orderedCalculatedProperties = columnOrder && Array.isArray(columnOrder)
+    ? [
+        ...columnOrder
+          .map(key => calculatedProperties.find(p => p.propertyName === key))
+          .filter(Boolean) as PropertyDefinition[],
+        ...calculatedProperties.filter(p => !columnOrder.includes(p.propertyName))
+      ]
+    : calculatedProperties;
 
   const hasError = error || (minItems !== undefined && lineItems.length < minItems);
 
@@ -248,17 +305,24 @@ export function MasterDetailForm({
             <TableBody>
               {lineItems.map((item, index) => (
                 <TableRow key={index}>
-                  {editableProperties.map((prop) => (
-                    <TableCell key={prop.propertyId}>
-                      <Box sx={{ minWidth: 120 }}>
-                        <FormField
-                          property={prop}
-                          value={item[prop.propertyName]}
-                          onChange={(val) => handleFieldChange(index, prop.propertyName, val)}
-                        />
-                      </Box>
-                    </TableCell>
-                  ))}
+                  {editableProperties.map((prop) => {
+                    // Check if this field should be read-only based on metadata
+                    const isReadOnly = prop.readOnly || 
+                      (prop.metadataJson?.autoPopulateFrom !== undefined && prop.metadataJson?.autoPopulateFrom !== null);
+                    const readOnlyProp = isReadOnly ? { ...prop, readOnly: true } : prop;
+                    
+                    return (
+                      <TableCell key={prop.propertyId}>
+                        <Box sx={{ minWidth: 120 }}>
+                          <FormField
+                            property={readOnlyProp}
+                            value={item[prop.propertyName]}
+                            onChange={(val) => handleFieldChange(index, prop.propertyName, val)}
+                          />
+                        </Box>
+                      </TableCell>
+                    );
+                  })}
                   {orderedCalculatedProperties.map((prop) => (
                     <TableCell key={prop.propertyId}>
                       <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>

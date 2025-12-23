@@ -25,6 +25,7 @@ interface FormFieldProps {
  */
 export function FormField({ property, value, onChange, onBlur, error, helperText }: FormFieldProps) {
   // Calculated fields are read-only display
+  // These may use measures in their calculationExpression
   if (property.propertyType === 'calculated') {
     return (
       <Box>
@@ -37,6 +38,11 @@ export function FormField({ property, value, onChange, onBlur, error, helperText
         <Typography variant="body2" sx={{ fontFamily: 'monospace', p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
           {value !== null && value !== undefined ? String(value) : '—'}
         </Typography>
+        {property.calculationExpression && (
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block', fontStyle: 'italic' }}>
+            {property.calculationExpression}
+          </Typography>
+        )}
         {property.description && (
           <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
             {property.description}

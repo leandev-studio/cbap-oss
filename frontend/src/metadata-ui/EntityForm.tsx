@@ -23,6 +23,7 @@ import {
 } from '../shared/services/entityRecordService';
 import { validateRecord, validateField, ValidationError } from '../shared/services/validationService';
 import { FormField } from './forms/FormField';
+import { MasterDetailForm } from './forms/MasterDetailForm';
 
 interface EntityFormProps {
   entityDefinition: EntityDefinition;
@@ -270,10 +271,16 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
   const validationTimers = useRef<Record<string, NodeJS.Timeout>>({});
 
   const handleFieldChange = (propertyName: string, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [propertyName]: value,
-    }));
+    };
+
+    // Note: Calculated fields (like Order totalAmount) are computed server-side
+    // based on metadata expressions. No client-side calculation to avoid hardcoded logic.
+
+    setFormData(newFormData);
+    
     // Clear error for this field (both client and server errors)
     if (errors[propertyName]) {
       setErrors((prev) => {
@@ -364,9 +371,12 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
   const isLoading = createMutation.isPending || updateMutation.isPending;
   const error = createMutation.error || updateMutation.error;
 
-  // Filter properties - exclude calculated fields from form (they're display-only)
-  const formProperties = entityDefinition.properties.filter(
+  // Separate editable and calculated properties
+  const editableProperties = entityDefinition.properties.filter(
     (p) => p.propertyType !== 'calculated'
+  );
+  const calculatedProperties = entityDefinition.properties.filter(
+    (p) => p.propertyType === 'calculated'
   );
 
   return (
@@ -412,16 +422,16 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
         }}
       >
         <Grid container spacing={3}>
-          {formProperties.length === 0 ? (
+          {editableProperties.length === 0 && calculatedProperties.length === 0 ? (
             <Grid item xs={12}>
               <Typography variant="body2" color="text.secondary">
-                No editable properties defined for this entity
+                No properties defined for this entity
               </Typography>
             </Grid>
           ) : (
             <>
-              {/* Header Fields */}
-              {formProperties
+              {/* Editable Fields */}
+              {editableProperties
                 .filter((property) => {
                   // Skip read-only fields in create mode
                   if (!isEditMode && property.readOnly) {
@@ -446,12 +456,27 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
                   </Grid>
                 ))}
               
+              {/* Calculated Fields (Display-only, may use measures) */}
+              {calculatedProperties
+                .filter((property) => property.metadataJson?.isDetailEntityArray !== true)
+                .map((property) => (
+                  <Grid item xs={12} sm={6} md={4} key={property.propertyId}>
+                    <FormField
+                      property={property}
+                      value={formData[property.propertyName] ?? (record?.data?.[property.propertyName])}
+                      onChange={() => {}} // Calculated fields are read-only
+                      error={false}
+                      helperText={property.description}
+                    />
+                  </Grid>
+                ))}
+              
               {/* Master-Detail Fields (Line Items) - Full Width */}
-              {formProperties
+              {editableProperties
                 .filter((property) => property.metadataJson?.isDetailEntityArray === true)
                 .map((property) => (
                   <Grid item xs={12} key={property.propertyId}>
-                    <FormField
+                    <MasterDetailForm
                       property={property}
                       value={formData[property.propertyName]}
                       onChange={(value) => handleFieldChange(property.propertyName, value)}
@@ -461,6 +486,7 @@ export function EntityForm({ entityDefinition, record, onCancel }: EntityFormPro
                         serverValidationErrors
                           .find(e => e.propertyName === property.propertyName && e.level === 'FIELD')
                           ?.message}
+                      parentFormData={formData}
                     />
                   </Grid>
                 ))}

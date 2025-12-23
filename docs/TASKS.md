@@ -347,27 +347,27 @@ Tasks are organized to:
 *Goal: Reusable business calculations work*
 
 ### 8.1 Backend: Measures Engine
-- ⬜ **Measure Metadata**
-  - [ ] Measure definition model (measureId, parameters, returnType, expression)
-  - [ ] Measure metadata service
-  - [ ] Measure versioning
-  - [ ] API: `GET /api/v1/metadata/measures`
-  - [ ] API: `POST /api/v1/metadata/measures` (admin)
+- ✅ **Measure Metadata**
+  - [x] Measure definition model (measureId, parameters, returnType, expression)
+  - [x] Measure metadata service
+  - [x] Measure versioning
+  - [x] API: `GET /api/v1/metadata/measures`
+  - [x] API: `POST /api/v1/metadata/measures` (admin)
 
-- ⬜ **Measure Evaluation**
-  - [ ] Measure evaluation service
-  - [ ] Parameter resolution
-  - [ ] Expression evaluation
-  - [ ] Aggregate functions (sum, count, exists)
-  - [ ] Measure caching (request-scoped)
-  - [ ] Dependency tracking
-  - [ ] API: `POST /api/v1/measures/{measureId}/evaluate`
+- ✅ **Measure Evaluation**
+  - [x] Measure evaluation service
+  - [x] Parameter resolution
+  - [x] Expression evaluation
+  - [x] Aggregate functions (sum, count, exists) - array-level aggregates
+  - [x] Measure caching (request-scoped)
+  - [x] Dependency tracking (metadata stored, invalidation not yet implemented)
+  - [x] API: `POST /api/v1/measures/{measureId}/evaluate`
 
 ### 8.2 Frontend: Measure Display
-- ⬜ **Calculated Fields**
-  - [ ] Display calculated field values
-  - [ ] Measure result display in forms
-  - [ ] Measure usage in validation (transparent to user)
+- ✅ **Calculated Fields**
+  - [x] Display calculated field values
+  - [x] Measure result display in forms
+  - [x] Measure usage in validation (transparent to user)
 
 **Phase 8 Deliverable**: Measures can be defined and used in rules
 
