@@ -34,18 +34,21 @@ public class EntityRecordService {
     private final UserRepository userRepository;
     private final com.cbap.search.service.SearchIndexingService searchIndexingService;
     private final ValidationService validationService;
+    private final CalculatedFieldService calculatedFieldService;
 
     public EntityRecordService(
             EntityRecordRepository entityRecordRepository,
             EntityDefinitionRepository entityDefinitionRepository,
             UserRepository userRepository,
             com.cbap.search.service.SearchIndexingService searchIndexingService,
-            ValidationService validationService) {
+            ValidationService validationService,
+            CalculatedFieldService calculatedFieldService) {
         this.entityRecordRepository = entityRecordRepository;
         this.entityDefinitionRepository = entityDefinitionRepository;
         this.userRepository = userRepository;
         this.searchIndexingService = searchIndexingService;
         this.validationService = validationService;
+        this.calculatedFieldService = calculatedFieldService;
     }
 
     /**
@@ -274,10 +277,14 @@ public class EntityRecordService {
             throw new IllegalArgumentException(errorMessage.toString());
         }
 
+        // Compute calculated fields based on metadata expressions
+        Map<String, Object> recordData = new HashMap<>(request.getData());
+        calculatedFieldService.computeCalculatedFields(entity, recordData, null);
+
         // Create record
         EntityRecord record = new EntityRecord();
         record.setEntity(entity);
-        record.setDataJson(request.getData());
+        record.setDataJson(recordData);
         record.setSchemaVersion(entity.getSchemaVersion());
         // Set initial state if workflow is assigned, otherwise use provided state
         if (entity.getWorkflowId() != null && !entity.getWorkflowId().isEmpty()) {
@@ -347,8 +354,19 @@ public class EntityRecordService {
             throw new IllegalArgumentException(errorMessage.toString());
         }
 
+        // Compute calculated fields based on metadata expressions
+        Map<String, Object> recordData = new HashMap<>(request.getData());
+        // For master-detail relationships, pass parent data for context
+        Map<String, Object> parentData = null;
+        if (entity.getProperties().stream().anyMatch(p -> p.getMetadataJson() != null && 
+                Boolean.TRUE.equals(p.getMetadataJson().get("isDetailEntityArray")))) {
+            // This is a detail entity, parent data would be the master record
+            // For now, we'll compute without parent context
+        }
+        calculatedFieldService.computeCalculatedFields(entity, recordData, parentData);
+
         // Update record
-        existingRecord.setDataJson(request.getData());
+        existingRecord.setDataJson(recordData);
         // State should be managed through workflow transitions, not direct updates
         // Only allow state updates if no workflow is assigned, or if explicitly allowed
         if (request.getState() != null && (entity.getWorkflowId() == null || entity.getWorkflowId().isEmpty())) {
