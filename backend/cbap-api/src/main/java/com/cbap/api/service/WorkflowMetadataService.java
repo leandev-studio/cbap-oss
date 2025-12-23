@@ -1,17 +1,22 @@
 package com.cbap.api.service;
 
+import com.cbap.persistence.entity.User;
 import com.cbap.persistence.entity.WorkflowDefinition;
 import com.cbap.persistence.entity.WorkflowState;
 import com.cbap.persistence.entity.WorkflowTransition;
+import com.cbap.persistence.repository.UserRepository;
 import com.cbap.persistence.repository.WorkflowDefinitionRepository;
 import com.cbap.persistence.repository.WorkflowStateRepository;
 import com.cbap.persistence.repository.WorkflowTransitionRepository;
 import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,14 +31,17 @@ public class WorkflowMetadataService {
     private final WorkflowDefinitionRepository workflowDefinitionRepository;
     private final WorkflowStateRepository workflowStateRepository;
     private final WorkflowTransitionRepository workflowTransitionRepository;
+    private final UserRepository userRepository;
 
     public WorkflowMetadataService(
             WorkflowDefinitionRepository workflowDefinitionRepository,
             WorkflowStateRepository workflowStateRepository,
-            WorkflowTransitionRepository workflowTransitionRepository) {
+            WorkflowTransitionRepository workflowTransitionRepository,
+            UserRepository userRepository) {
         this.workflowDefinitionRepository = workflowDefinitionRepository;
         this.workflowStateRepository = workflowStateRepository;
         this.workflowTransitionRepository = workflowTransitionRepository;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -133,6 +141,178 @@ public class WorkflowMetadataService {
     }
 
     /**
+     * Create a new workflow definition (admin only).
+     */
+    @Transactional
+    public WorkflowDefinitionDTO createWorkflow(CreateWorkflowRequest request, Authentication authentication) {
+        if (workflowDefinitionRepository.existsById(request.getWorkflowId())) {
+            throw new IllegalArgumentException("Workflow ID already exists: " + request.getWorkflowId());
+        }
+
+        User user = getCurrentUser(authentication);
+
+        // Create workflow definition
+        WorkflowDefinition workflow = new WorkflowDefinition();
+        workflow.setWorkflowId(request.getWorkflowId());
+        workflow.setName(request.getName());
+        workflow.setDescription(request.getDescription());
+        workflow.setInitialState(request.getInitialState());
+        workflow.setMetadataJson(request.getMetadataJson());
+        workflow.setCreatedBy(user);
+
+        workflow = workflowDefinitionRepository.save(workflow);
+
+        // Create states
+        if (request.getStates() != null) {
+            List<WorkflowState> states = new ArrayList<>();
+            for (CreateStateRequest stateRequest : request.getStates()) {
+                WorkflowState state = new WorkflowState();
+                state.setWorkflow(workflow);
+                state.setStateName(stateRequest.getStateName());
+                state.setLabel(stateRequest.getLabel());
+                state.setLabelKey(stateRequest.getLabelKey());
+                state.setDescription(stateRequest.getDescription());
+                state.setIsInitial(stateRequest.getInitial() != null ? stateRequest.getInitial() : false);
+                state.setIsFinal(stateRequest.getFinal_() != null ? stateRequest.getFinal_() : false);
+                state.setMetadataJson(stateRequest.getMetadataJson());
+                states.add(state);
+            }
+            workflowStateRepository.saveAll(states);
+        }
+
+        // Create transitions
+        if (request.getTransitions() != null) {
+            List<WorkflowTransition> transitions = new ArrayList<>();
+            for (CreateTransitionRequest transRequest : request.getTransitions()) {
+                WorkflowTransition transition = new WorkflowTransition();
+                transition.setWorkflow(workflow);
+                transition.setFromState(transRequest.getFromState());
+                transition.setToState(transRequest.getToState());
+                transition.setActionLabel(transRequest.getActionLabel());
+                transition.setLabelKey(transRequest.getLabelKey());
+                transition.setDescription(transRequest.getDescription());
+                transition.setConditionsJson(transRequest.getConditionsJson());
+                transition.setAllowedRoles(transRequest.getAllowedRoles());
+                transition.setPreTransitionRules(transRequest.getPreTransitionRules());
+                transition.setMetadataJson(transRequest.getMetadataJson());
+                transitions.add(transition);
+            }
+            workflowTransitionRepository.saveAll(transitions);
+        }
+
+        // Reload with states and transitions
+        workflow = workflowDefinitionRepository.findById(workflow.getWorkflowId())
+                .orElse(workflow);
+        Hibernate.initialize(workflow.getStates());
+        Hibernate.initialize(workflow.getTransitions());
+
+        return toDTO(workflow);
+    }
+
+    /**
+     * Update a workflow definition (admin only).
+     */
+    @Transactional
+    public WorkflowDefinitionDTO updateWorkflow(String workflowId, UpdateWorkflowRequest request) {
+        WorkflowDefinition workflow = workflowDefinitionRepository.findById(workflowId)
+                .orElseThrow(() -> new IllegalArgumentException("Workflow not found: " + workflowId));
+
+        // Update basic fields
+        if (request.getName() != null) {
+            workflow.setName(request.getName());
+        }
+        if (request.getDescription() != null) {
+            workflow.setDescription(request.getDescription());
+        }
+        if (request.getInitialState() != null) {
+            workflow.setInitialState(request.getInitialState());
+        }
+        if (request.getMetadataJson() != null) {
+            workflow.setMetadataJson(request.getMetadataJson());
+        }
+
+        workflow = workflowDefinitionRepository.save(workflow);
+
+        // Update states if provided
+        if (request.getStates() != null) {
+            // Delete existing states
+            workflowStateRepository.deleteAll(workflow.getStates());
+            
+            // Create new states
+            List<WorkflowState> states = new ArrayList<>();
+            for (CreateStateRequest stateRequest : request.getStates()) {
+                WorkflowState state = new WorkflowState();
+                state.setWorkflow(workflow);
+                state.setStateName(stateRequest.getStateName());
+                state.setLabel(stateRequest.getLabel());
+                state.setLabelKey(stateRequest.getLabelKey());
+                state.setDescription(stateRequest.getDescription());
+                state.setIsInitial(stateRequest.getInitial() != null ? stateRequest.getInitial() : false);
+                state.setIsFinal(stateRequest.getFinal_() != null ? stateRequest.getFinal_() : false);
+                state.setMetadataJson(stateRequest.getMetadataJson());
+                states.add(state);
+            }
+            workflowStateRepository.saveAll(states);
+        }
+
+        // Update transitions if provided
+        if (request.getTransitions() != null) {
+            // Delete existing transitions
+            workflowTransitionRepository.deleteAll(workflow.getTransitions());
+            
+            // Create new transitions
+            List<WorkflowTransition> transitions = new ArrayList<>();
+            for (CreateTransitionRequest transRequest : request.getTransitions()) {
+                WorkflowTransition transition = new WorkflowTransition();
+                transition.setWorkflow(workflow);
+                transition.setFromState(transRequest.getFromState());
+                transition.setToState(transRequest.getToState());
+                transition.setActionLabel(transRequest.getActionLabel());
+                transition.setLabelKey(transRequest.getLabelKey());
+                transition.setDescription(transRequest.getDescription());
+                transition.setConditionsJson(transRequest.getConditionsJson());
+                transition.setAllowedRoles(transRequest.getAllowedRoles());
+                transition.setPreTransitionRules(transRequest.getPreTransitionRules());
+                transition.setMetadataJson(transRequest.getMetadataJson());
+                transitions.add(transition);
+            }
+            workflowTransitionRepository.saveAll(transitions);
+        }
+
+        // Reload with states and transitions
+        workflow = workflowDefinitionRepository.findById(workflow.getWorkflowId())
+                .orElse(workflow);
+        Hibernate.initialize(workflow.getStates());
+        Hibernate.initialize(workflow.getTransitions());
+
+        return toDTO(workflow);
+    }
+
+    /**
+     * Delete a workflow definition (admin only).
+     */
+    @Transactional
+    public void deleteWorkflow(String workflowId) {
+        WorkflowDefinition workflow = workflowDefinitionRepository.findById(workflowId)
+                .orElseThrow(() -> new IllegalArgumentException("Workflow not found: " + workflowId));
+        
+        // Cascade delete will handle states and transitions
+        workflowDefinitionRepository.delete(workflow);
+    }
+
+    /**
+     * Get current user from authentication.
+     */
+    private User getCurrentUser(Authentication authentication) {
+        if (authentication == null || !(authentication.getPrincipal() instanceof UserDetails)) {
+            throw new RuntimeException("User not authenticated");
+        }
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        return userRepository.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    /**
      * Workflow Definition DTO.
      */
     public static class WorkflowDefinitionDTO {
@@ -229,5 +409,113 @@ public class WorkflowMetadataService {
         public void setPreTransitionRules(java.util.Map<String, Object> preTransitionRules) { this.preTransitionRules = preTransitionRules; }
         public java.util.Map<String, Object> getMetadataJson() { return metadataJson; }
         public void setMetadataJson(java.util.Map<String, Object> metadataJson) { this.metadataJson = metadataJson; }
+    }
+
+    // Request DTOs
+    public static class CreateWorkflowRequest {
+        private String workflowId;
+        private String name;
+        private String description;
+        private String initialState;
+        private java.util.Map<String, Object> metadataJson;
+        private List<CreateStateRequest> states;
+        private List<CreateTransitionRequest> transitions;
+
+        // Getters and setters
+        public String getWorkflowId() { return workflowId; }
+        public void setWorkflowId(String workflowId) { this.workflowId = workflowId; }
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public String getInitialState() { return initialState; }
+        public void setInitialState(String initialState) { this.initialState = initialState; }
+        public java.util.Map<String, Object> getMetadataJson() { return metadataJson; }
+        public void setMetadataJson(java.util.Map<String, Object> metadataJson) { this.metadataJson = metadataJson; }
+        public List<CreateStateRequest> getStates() { return states; }
+        public void setStates(List<CreateStateRequest> states) { this.states = states; }
+        public List<CreateTransitionRequest> getTransitions() { return transitions; }
+        public void setTransitions(List<CreateTransitionRequest> transitions) { this.transitions = transitions; }
+    }
+
+    public static class CreateStateRequest {
+        private String stateName;
+        private String label;
+        private String labelKey;
+        private String description;
+        private Boolean initial;
+        private Boolean final_;
+        private java.util.Map<String, Object> metadataJson;
+
+        // Getters and setters
+        public String getStateName() { return stateName; }
+        public void setStateName(String stateName) { this.stateName = stateName; }
+        public String getLabel() { return label; }
+        public void setLabel(String label) { this.label = label; }
+        public String getLabelKey() { return labelKey; }
+        public void setLabelKey(String labelKey) { this.labelKey = labelKey; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public Boolean getInitial() { return initial; }
+        public void setInitial(Boolean initial) { this.initial = initial; }
+        public Boolean getFinal_() { return final_; }
+        public void setFinal_(Boolean final_) { this.final_ = final_; }
+        public java.util.Map<String, Object> getMetadataJson() { return metadataJson; }
+        public void setMetadataJson(java.util.Map<String, Object> metadataJson) { this.metadataJson = metadataJson; }
+    }
+
+    public static class CreateTransitionRequest {
+        private String fromState;
+        private String toState;
+        private String actionLabel;
+        private String labelKey;
+        private String description;
+        private java.util.Map<String, Object> conditionsJson;
+        private List<String> allowedRoles;
+        private java.util.Map<String, Object> preTransitionRules;
+        private java.util.Map<String, Object> metadataJson;
+
+        // Getters and setters
+        public String getFromState() { return fromState; }
+        public void setFromState(String fromState) { this.fromState = fromState; }
+        public String getToState() { return toState; }
+        public void setToState(String toState) { this.toState = toState; }
+        public String getActionLabel() { return actionLabel; }
+        public void setActionLabel(String actionLabel) { this.actionLabel = actionLabel; }
+        public String getLabelKey() { return labelKey; }
+        public void setLabelKey(String labelKey) { this.labelKey = labelKey; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public java.util.Map<String, Object> getConditionsJson() { return conditionsJson; }
+        public void setConditionsJson(java.util.Map<String, Object> conditionsJson) { this.conditionsJson = conditionsJson; }
+        public List<String> getAllowedRoles() { return allowedRoles; }
+        public void setAllowedRoles(List<String> allowedRoles) { this.allowedRoles = allowedRoles; }
+        public java.util.Map<String, Object> getPreTransitionRules() { return preTransitionRules; }
+        public void setPreTransitionRules(java.util.Map<String, Object> preTransitionRules) { this.preTransitionRules = preTransitionRules; }
+        public java.util.Map<String, Object> getMetadataJson() { return metadataJson; }
+        public void setMetadataJson(java.util.Map<String, Object> metadataJson) { this.metadataJson = metadataJson; }
+    }
+
+    public static class UpdateWorkflowRequest {
+        private String name;
+        private String description;
+        private String initialState;
+        private java.util.Map<String, Object> metadataJson;
+        private List<CreateStateRequest> states;
+        private List<CreateTransitionRequest> transitions;
+
+        // Getters and setters
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
+        public String getInitialState() { return initialState; }
+        public void setInitialState(String initialState) { this.initialState = initialState; }
+        public java.util.Map<String, Object> getMetadataJson() { return metadataJson; }
+        public void setMetadataJson(java.util.Map<String, Object> metadataJson) { this.metadataJson = metadataJson; }
+        public List<CreateStateRequest> getStates() { return states; }
+        public void setStates(List<CreateStateRequest> states) { this.states = states; }
+        public List<CreateTransitionRequest> getTransitions() { return transitions; }
+        public void setTransitions(List<CreateTransitionRequest> transitions) { this.transitions = transitions; }
     }
 }

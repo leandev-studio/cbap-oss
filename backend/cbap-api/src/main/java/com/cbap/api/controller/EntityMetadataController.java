@@ -2,6 +2,7 @@ package com.cbap.api.controller;
 
 import com.cbap.api.service.EntityMetadataService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -114,5 +115,28 @@ public class EntityMetadataController {
         response.put("properties", entity.getProperties());
         
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Delete an entity definition (admin only).
+     * DELETE /api/v1/metadata/entities/{entityId}
+     */
+    @DeleteMapping("/{entityId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteEntity(
+            @PathVariable String entityId,
+            Authentication authentication) {
+        try {
+            entityMetadataService.deleteEntity(entityId);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Entity definition deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Not found");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
     }
 }

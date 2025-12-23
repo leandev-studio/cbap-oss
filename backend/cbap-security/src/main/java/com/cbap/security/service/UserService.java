@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -160,5 +161,63 @@ public class UserService {
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    /**
+     * Update a user (admin only).
+     *
+     * @param userId the user ID
+     * @param email the new email (optional)
+     * @param status the new status (optional)
+     * @param roleNames the new role names (optional)
+     * @return the updated user
+     */
+    @Transactional
+    public User updateUser(UUID userId, String email, String status, List<String> roleNames) {
+        User user = getUserById(userId);
+
+        if (email != null && !email.isBlank()) {
+            // Check if email is already taken by another user
+            Optional<User> existingUser = userRepository.findByEmail(email);
+            if (existingUser.isPresent() && !existingUser.get().getUserId().equals(userId)) {
+                throw new IllegalArgumentException("Email already exists: " + email);
+            }
+            user.setEmail(email);
+        }
+
+        if (status != null && !status.isBlank()) {
+            try {
+                user.setStatus(User.UserStatus.valueOf(status.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid status: " + status);
+            }
+        }
+
+        if (roleNames != null) {
+            Set<Role> roles = new HashSet<>();
+            for (String roleName : roleNames) {
+                Role role = roleRepository.findByRoleName(roleName)
+                        .orElseThrow(() -> new IllegalArgumentException("Role not found: " + roleName));
+                roles.add(role);
+            }
+            user.setRoles(roles);
+        }
+
+        return userRepository.save(user);
+    }
+
+    /**
+     * Delete a user (admin only).
+     *
+     * @param userId the user ID
+     */
+    @Transactional
+    public void deleteUser(UUID userId) {
+        User user = getUserById(userId);
+        // Prevent deleting the admin user (optional safety check)
+        if ("admin".equals(user.getUsername())) {
+            throw new IllegalArgumentException("Cannot delete the admin user");
+        }
+        userRepository.delete(user);
     }
 }

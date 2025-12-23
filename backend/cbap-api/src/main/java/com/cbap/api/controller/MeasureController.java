@@ -104,6 +104,86 @@ public class MeasureController {
     }
 
     /**
+     * Update a measure (admin only).
+     * PUT /api/v1/metadata/measures/{measureIdentifier}?version=1
+     */
+    @PutMapping("/metadata/measures/{measureIdentifier}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> updateMeasure(
+            @PathVariable String measureIdentifier,
+            @RequestParam(required = false) Integer version,
+            @RequestBody Measure measure,
+            Authentication authentication) {
+        
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+
+        try {
+            // Ensure measure identifier and version match
+            if (!measureIdentifier.equals(measure.getMeasureIdentifier())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Bad Request", "message", "Measure identifier mismatch"));
+            }
+            if (version != null && !version.equals(measure.getVersion())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "Bad Request", "message", "Measure version mismatch"));
+            }
+
+            Measure savedMeasure = measureMetadataService.saveMeasure(measure);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("measure", savedMeasure);
+            response.put("message", "Measure updated successfully");
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Bad Request", "message", e.getMessage()));
+        }
+    }
+
+    /**
+     * Delete a measure (admin only).
+     * DELETE /api/v1/metadata/measures/{measureIdentifier}?version=1
+     */
+    @DeleteMapping("/metadata/measures/{measureIdentifier}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteMeasure(
+            @PathVariable String measureIdentifier,
+            @RequestParam(required = false) Integer version,
+            Authentication authentication) {
+        
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Unauthorized", "message", "Authentication required"));
+        }
+
+        try {
+            if (version == null) {
+                // If no version specified, delete latest version
+                version = measureMetadataService.getLatestMeasure(measureIdentifier)
+                        .map(Measure::getVersion)
+                        .orElseThrow(() -> new IllegalArgumentException("Measure not found: " + measureIdentifier));
+            }
+            
+            measureMetadataService.deleteMeasure(measureIdentifier, version);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Measure deleted successfully");
+            
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Not Found", "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Bad Request", "message", e.getMessage()));
+        }
+    }
+
+    /**
      * Evaluate a measure.
      * POST /api/v1/measures/{measureIdentifier}/evaluate?version=1
      */
