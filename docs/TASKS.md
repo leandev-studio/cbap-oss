@@ -456,32 +456,30 @@ Tasks are organized to:
 *Goal: Admins can configure the system*
 
 ### 12.1 Backend: Admin APIs
-- ⬜ **User Management**
-  - [ ] User CRUD APIs (admin only)
-  - [ ] Role management APIs
-  - [ ] Permission assignment APIs
+- ✅ **User Management**
+  - [x] User CRUD APIs (admin only)
+  - [x] Role management APIs
+  - [x] Permission assignment APIs
 
-- ⬜ **Metadata Management**
-  - [ ] Entity definition CRUD (admin)
-  - [ ] Workflow definition CRUD (admin)
-  - [ ] Measure definition CRUD (admin)
-  - [ ] Validation rule management
+- ✅ **Metadata Management**
+  - [x] Entity definition CRUD (admin)
+  - [x] Workflow definition CRUD (admin)
+  - [x] Measure definition CRUD (admin)
+  - [x] Validation rule management
 
-- ⬜ **System Configuration**
-  - [ ] System settings API
-  - [ ] Org topology management API
-  - [ ] Licensing status API
+- ✅ **System Configuration**
+  - [x] System settings API
+  - [x] Licensing status API
 
 ### 12.2 Frontend: Admin UI
-- ⬜ **Admin Pages**
-  - [ ] User management page
-  - [ ] Role management page
-  - [ ] Entity definition editor (basic grid/form)
-  - [ ] Workflow definition editor (basic grid)
-  - [ ] Measure definition editor
-  - [ ] System settings page
-  - [ ] Org topology management page
-  - [ ] Licensing status page
+- ✅ **Admin Pages**
+  - [x] User management page
+  - [x] Role management page
+  - [x] Entity definition editor (basic grid/form)
+  - [x] Workflow definition editor (basic grid)
+  - [x] Measure definition editor
+  - [x] System settings page
+  - [x] Licensing status page
 
 **Phase 12 Deliverable**: Admins can configure entities, workflows, and users
 

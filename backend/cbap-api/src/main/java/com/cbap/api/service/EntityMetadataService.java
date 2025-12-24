@@ -157,6 +157,22 @@ public class EntityMetadataService {
     }
 
     /**
+     * Delete an entity definition (admin only).
+     * Note: This will cascade delete all properties and validation rules.
+     */
+    @Transactional
+    public void deleteEntity(String entityId) {
+        EntityDefinition entity = entityDefinitionRepository.findById(entityId)
+                .orElseThrow(() -> new IllegalArgumentException("Entity not found: " + entityId));
+        
+        // Check if there are any records for this entity
+        // Note: In a production system, you might want to prevent deletion if records exist
+        // For now, we allow deletion (cascade will handle related data)
+        
+        entityDefinitionRepository.delete(entity);
+    }
+
+    /**
      * Get current user from authentication.
      */
     private User getCurrentUser(Authentication authentication) {

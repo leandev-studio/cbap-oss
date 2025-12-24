@@ -15,6 +15,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -64,6 +65,26 @@ public class UserController {
     }
 
     /**
+     * Get all users (admin only).
+     * GET /api/v1/users
+     */
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> getAllUsers(Authentication authentication) {
+        List<User> users = userService.getAllUsers();
+        
+        List<Map<String, Object>> userList = users.stream()
+                .map(this::buildUserResponse)
+                .collect(Collectors.toList());
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("users", userList);
+        response.put("count", userList.size());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * Get a user by ID.
      * GET /api/v1/users/{id}
      */
@@ -87,6 +108,57 @@ public class UserController {
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             Map<String, Object> error = new HashMap<>();
+            error.put("error", "Not found");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+        }
+    }
+
+    /**
+     * Update a user (admin only).
+     * PUT /api/v1/users/{id}
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, Object>> updateUser(
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> request,
+            Authentication authentication) {
+        try {
+            User updatedUser = userService.updateUser(
+                    id,
+                    (String) request.get("email"),
+                    (String) request.get("status"),
+                    (List<String>) request.get("roles")
+            );
+
+            Map<String, Object> response = buildUserResponse(updatedUser);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("error", "Bad Request");
+            error.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+        }
+    }
+
+    /**
+     * Delete a user (admin only).
+     * DELETE /api/v1/users/{id}
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Map<String, String>> deleteUser(
+            @PathVariable UUID id,
+            Authentication authentication) {
+        try {
+            userService.deleteUser(id);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "User deleted successfully");
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, String> error = new HashMap<>();
             error.put("error", "Not found");
             error.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
