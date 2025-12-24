@@ -102,61 +102,6 @@ public class AdminService {
     }
 
     /**
-     * Get organization topology.
-     * Note: In a production system, this would query cbap_org_units table.
-     * For now, return placeholder structure.
-     */
-    @Transactional(readOnly = true)
-    public Map<String, Object> getOrgTopology() {
-        Map<String, Object> topology = new HashMap<>();
-        topology.put("orgUnits", List.of()); // Placeholder - would query from cbap_org_units
-        topology.put("message", "Organization topology management - to be implemented with OrgUnit entity");
-        return topology;
-    }
-
-    /**
-     * Create organization unit.
-     * Note: In a production system, this would persist to cbap_org_units table.
-     * For now, return the request as-is (placeholder).
-     */
-    @Transactional
-    public Map<String, Object> createOrgUnit(Map<String, Object> request) {
-        // Placeholder - would create OrgUnit entity and persist
-        logger.info("Creating org unit: {}", request);
-        Map<String, Object> response = new HashMap<>(request);
-        response.put("orgUnitId", java.util.UUID.randomUUID().toString());
-        response.put("message", "Organization unit created (placeholder - full implementation requires OrgUnit entity)");
-        return response;
-    }
-
-    /**
-     * Update organization unit.
-     * Note: In a production system, this would update cbap_org_units table.
-     * For now, return the request as-is (placeholder).
-     */
-    @Transactional
-    public Map<String, Object> updateOrgUnit(String orgUnitId, Map<String, Object> request) {
-        // Placeholder - would update OrgUnit entity
-        logger.info("Updating org unit {}: {}", orgUnitId, request);
-        Map<String, Object> response = new HashMap<>(request);
-        response.put("orgUnitId", orgUnitId);
-        response.put("message", "Organization unit updated (placeholder - full implementation requires OrgUnit entity)");
-        return response;
-    }
-
-    /**
-     * Delete organization unit.
-     * Note: In a production system, this would delete from cbap_org_units table.
-     * For now, just log (placeholder).
-     */
-    @Transactional
-    public void deleteOrgUnit(String orgUnitId) {
-        // Placeholder - would delete OrgUnit entity
-        logger.info("Deleting org unit: {}", orgUnitId);
-        // In production: orgUnitRepository.deleteById(UUID.fromString(orgUnitId));
-    }
-
-    /**
      * Result of reindex operation.
      */
     public static class ReindexResult {

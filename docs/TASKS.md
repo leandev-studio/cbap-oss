@@ -469,19 +469,17 @@ Tasks are organized to:
 
 - ✅ **System Configuration**
   - [x] System settings API
-  - [x] Org topology management API
   - [x] Licensing status API
 
 ### 12.2 Frontend: Admin UI
-- ⬜ **Admin Pages**
-  - [ ] User management page
-  - [ ] Role management page
-  - [ ] Entity definition editor (basic grid/form)
-  - [ ] Workflow definition editor (basic grid)
-  - [ ] Measure definition editor
-  - [ ] System settings page
-  - [ ] Org topology management page
-  - [ ] Licensing status page
+- ✅ **Admin Pages**
+  - [x] User management page
+  - [x] Role management page
+  - [x] Entity definition editor (basic grid/form)
+  - [x] Workflow definition editor (basic grid)
+  - [x] Measure definition editor
+  - [x] System settings page
+  - [x] Licensing status page
 
 **Phase 12 Deliverable**: Admins can configure entities, workflows, and users
 

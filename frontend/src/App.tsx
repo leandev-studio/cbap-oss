@@ -9,6 +9,12 @@ import { LoginPage } from './pages/LoginPage';
 import { SearchResultsPage } from './pages/SearchResultsPage';
 import { TasksPage } from './pages/TasksPage';
 import { EntityDefinitionsAdminPage } from './pages/EntityDefinitionsAdminPage';
+import { UserManagementPage } from './pages/UserManagementPage';
+import { RoleManagementPage } from './pages/RoleManagementPage';
+import { WorkflowDefinitionEditorPage } from './pages/WorkflowDefinitionEditorPage';
+import { MeasureDefinitionEditorPage } from './pages/MeasureDefinitionEditorPage';
+import { SystemSettingsPage } from './pages/SystemSettingsPage';
+import { LicensingStatusPage } from './pages/LicensingStatusPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -77,6 +83,54 @@ function App() {
           element={
             <ProtectedRoute>
               <EntityDefinitionsAdminPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/users"
+          element={
+            <ProtectedRoute>
+              <UserManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/roles"
+          element={
+            <ProtectedRoute>
+              <RoleManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/workflows"
+          element={
+            <ProtectedRoute>
+              <WorkflowDefinitionEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/measures"
+          element={
+            <ProtectedRoute>
+              <MeasureDefinitionEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/system/settings"
+          element={
+            <ProtectedRoute>
+              <SystemSettingsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="admin/system/licensing"
+          element={
+            <ProtectedRoute>
+              <LicensingStatusPage />
             </ProtectedRoute>
           }
         />

@@ -438,48 +438,17 @@ Rules:
 
 ---
 
-### 4.11 Organization Topology & Facility Partitioning (Core)
+### 4.11 Organization Topology & Facility Partitioning (Commercial Only)
 
-The platform MUST support organizational topology required for real-world deployments:
-- HQ (root)
-- Regional Office(s) (optional intermediate level)
-- Facility/Site(s) (leaf nodes where operational data is produced)
+**Note:** Organization topology management (HQ/Region/Facility hierarchy, multi-site deployments, facility partitioning, and replication) is **not included in the OSS version**. The OSS version is designed for single-site deployments.
 
-#### 4.11.1 Topology Entities
+For commercial/enterprise deployments requiring:
+- Multi-site organizational topology (HQ, Regional Offices, Facilities)
+- Facility-level data partitioning (`facilityId` fields, `LOCAL`/`GLOBAL`/`SHARED` scope policies)
+- Replication between sites (outbox/inbox patterns, cross-org approvals)
+- Multi-level aggregation and conflict resolution
 
-The platform MUST include a minimal set of core entities (system-managed):
-- `OrgUnit`
-  - `orgUnitId` (global unique ID)
-  - `tenantId`
-  - `type` (HQ | REGION | FACILITY)
-  - `name`
-  - `parentOrgUnitId` (null for HQ)
-  - `timezone`
-  - `status` (ACTIVE | INACTIVE)
-- `Facility`
-  - `facilityId` (alias of OrgUnit where type=FACILITY)
-  - `regionOrgUnitId` (optional parent linkage)
-
-Rules:
-- Exactly one HQ OrgUnit exists per tenant
-- Regions may have one or more Facilities
-- Facilities belong to exactly one parent OrgUnit (HQ or Region)
-
-#### 4.11.2 Record Partitioning Fields
-
-All records in the system MUST include:
-- `tenantId`
-- `facilityId` (nullable ONLY for HQ-owned/global records)
-
-Additionally, entities MUST declare a `scope` policy:
-- `LOCAL`  : data is owned and written at a Facility; replicated upward
-- `GLOBAL` : data is owned and written at HQ; replicated downward
-- `SHARED` : tenant-wide reference/master data; ownership must be configured (default HQ)
-
-Defaults:
-- Operational logs (e.g., inspections, tank logs) are LOCAL
-- Policies, limits, budgets are GLOBAL (HQ-owned)
-- Master/reference data (vendors, items) are SHARED (default HQ)
+Please refer to the commercial edition documentation.
 
 ---
 
@@ -1185,11 +1154,11 @@ Rules:
 - Workflow definition (basic grid)
 - Measure definition (metadata CRUD)
 - System configuration
-- Org topology management (create HQ/Region/Facility nodes)
-- Replication configuration (set upstream URL, credentials, and node identity)
 - Licensing configuration (set Primary Node, apply license, view entitlement status)
 - Trial/licensing status warnings and audit view
 - Controlled document management (create, publish, retire, link)
+
+**Note:** Org topology management and replication configuration are commercial-only features (not available in OSS).
 
 ---
 
@@ -1248,7 +1217,7 @@ Rule execution must be auditable and traceable.
 The following **must not** be implemented in OSS:
 - Visual workflow designer
 - Advanced dashboards & charts
-- Multi-site / HQ consolidation
+- Multi-site / HQ consolidation (organization topology, facility partitioning, replication)
 - Enterprise authentication
 - AI assistant
 - SLA & escalation logic

@@ -39,7 +39,15 @@ public class RoleManagementService {
      */
     @Transactional(readOnly = true)
     public List<Role> getAllRoles() {
-        return roleRepository.findAll();
+        List<Role> roles = roleRepository.findAll();
+        // Initialize permissions for each role inside the transaction to avoid
+        // LazyInitializationException when building DTOs in the controller.
+        for (Role role : roles) {
+            if (role.getPermissions() != null) {
+                role.getPermissions().size();
+            }
+        }
+        return roles;
     }
 
     /**

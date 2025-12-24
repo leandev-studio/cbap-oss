@@ -160,7 +160,15 @@ public class UserService {
      */
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        List<User> users = userRepository.findAll();
+        // Initialize roles for each user inside the transaction to avoid
+        // LazyInitializationException when building DTOs in the controller.
+        for (User user : users) {
+            if (user.getRoles() != null) {
+                user.getRoles().size();
+            }
+        }
+        return users;
     }
 
     /**

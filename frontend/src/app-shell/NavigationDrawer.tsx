@@ -23,6 +23,10 @@ import {
   Security,
   Schema,
   Assignment,
+  AccountTree,
+  Functions,
+  Business,
+  VerifiedUser,
   ExpandLess,
   ExpandMore,
   ChevronLeft,
@@ -30,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { getNavigation, NavigationItem } from '../shared/services/navigationService';
 import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '../shared/context/AuthContext';
 
 /**
  * Icon mapping for navigation items
@@ -42,6 +47,10 @@ const iconMap: Record<string, React.ReactNode> = {
   Security: <Security />,
   Schema: <Schema />,
   Assignment: <Assignment />,
+  AccountTree: <AccountTree />,
+  Functions: <Functions />,
+  Business: <Business />,
+  VerifiedUser: <VerifiedUser />,
 };
 
 /**
@@ -194,13 +203,20 @@ export function NavigationDrawer({
   const location = useLocation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
 
   // Fetch navigation items
-  const { data: navigationItems = [], isLoading } = useQuery({
+  const {
+    data: navigationItems = [],
+    isLoading: isNavLoading,
+  } = useQuery({
     queryKey: ['navigation'],
     queryFn: getNavigation,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: isAuthenticated && !isAuthLoading,
   });
+
+  const isLoading = isAuthLoading || isNavLoading;
 
   const handleNavigate = (path: string) => {
     navigate(path);
