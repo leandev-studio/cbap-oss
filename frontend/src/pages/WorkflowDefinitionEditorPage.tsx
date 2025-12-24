@@ -21,7 +21,7 @@ import {
   DialogActions,
   TextField,
 } from '@mui/material';
-import { AccountTree, Add, Edit, Delete, Code } from '@mui/icons-material';
+import { AccountTree, Add, Delete, Code } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getAllWorkflows,
